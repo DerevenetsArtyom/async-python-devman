@@ -7,19 +7,21 @@ import time
 async def blink(canvas, row, column, symbol):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for i in range(20):
+        delay = random.randint(1, 20)
+
+        for i in range(delay):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
-        for i in range(3):
+        for i in range(delay):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for i in range(5):
+        for i in range(delay):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
-        for i in range(3):
+        for i in range(delay):
             await asyncio.sleep(0)
 
 
