@@ -3,7 +3,9 @@ import curses
 import random
 import time
 
-from curses_tools import draw_frame
+from curses_tools import draw_frame, read_controls
+
+TIC_TIMEOUT = 0.1
 
 
 async def fire(canvas, start_row, start_column, rows_speed=0, columns_speed=1):
@@ -67,6 +69,10 @@ async def animate_spaceship(canvas, row, column, frame1, frame2):
 
         # flush the previous frame before drawing the next one
         draw_frame(canvas, row, column, frame1, negative=True)
+
+        # update coordinates after pressing some arrow
+        row, column, _ = read_controls(canvas, row, column)
+
         draw_frame(canvas, row, column, frame2)
         canvas.refresh()
         await asyncio.sleep(0)
@@ -83,7 +89,9 @@ def read_rocket_frames():
 
 
 def draw(canvas):
-    curses.curs_set(False)
+    curses.curs_set(False)  # Set the cursor state. 0 for invisible.
+
+    canvas.nodelay(True)  # If flag is True, getch() will be non-blocking.
     canvas.border()
     canvas.refresh()
 
@@ -91,18 +99,18 @@ def draw(canvas):
     canvas_height, canvas_width = canvas.getmaxyx()
     number_of_stars = random.randint(50, 60)
 
+    coroutines = []
     # Add initial action (coroutine) - shot out of a cannon
-    coroutine_fire = fire(canvas, canvas_height // 2, canvas_width // 2)
-    coroutines = [coroutine_fire]
+    # coroutine_fire = fire(canvas, canvas_height // 2, canvas_width // 2)
+    # coroutines.append(coroutine_fire)
 
     # Add action (coroutine) - animate spaceship
     coroutine_rocket = animate_spaceship(
         canvas,
-        canvas_height // 5,
-        canvas_width // 5,
+        canvas_height // 2,
+        canvas_width // 2,
         frame1, frame2,
     )
-
     coroutines.append(coroutine_rocket)
 
     # Form list of coroutines (1 coroutine - 1 star)
@@ -124,7 +132,7 @@ def draw(canvas):
             except StopIteration:
                 coroutines.remove(coroutine)
 
-        time.sleep(0.1)
+        time.sleep(TIC_TIMEOUT)
         canvas.refresh()
 
 

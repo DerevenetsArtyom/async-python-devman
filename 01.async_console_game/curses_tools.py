@@ -5,7 +5,6 @@ UP_KEY_CODE = 259
 DOWN_KEY_CODE = 258
 
 
-# For Step 12?
 def read_controls(canvas):
     """Read keys pressed and returns tuple with controls state."""
 
@@ -16,7 +15,6 @@ def read_controls(canvas):
         pressed_key_code = canvas.getch()
 
         if pressed_key_code == -1:
-            # https://docs.python.org/3/library/curses.html#curses.window.getch
             break
 
         if pressed_key_code == UP_KEY_CODE:
@@ -61,7 +59,6 @@ def draw_frame(canvas, start_row, start_column, text, negative=False):
             canvas.addch(row, column, symbol)
 
 
-# For Step 13?
 def get_frame_size(text):
     """Calculate size of multiline text fragment.
     Returns pair (rows number, columns number)"""
