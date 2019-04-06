@@ -3,7 +3,7 @@ import curses
 import random
 import time
 
-from curses_tools import draw_frame, read_controls
+from curses_tools import draw_frame, read_controls, get_frame_size
 
 TIC_TIMEOUT = 0.1
 
@@ -61,6 +61,9 @@ async def blink(canvas, row, column, symbol):
 
 
 async def animate_spaceship(canvas, row, column, frame1, frame2):
+    canvas_max_height, canvas_max_width = canvas.getmaxyx()  # (26, 191)
+    frame_rows, frame_columns = get_frame_size(frame1)  # (9, 5)
+
     # while loop needs to be here not to throw StopIteration and work forever...
     while True:
         draw_frame(canvas, row, column, frame1)
@@ -71,7 +74,15 @@ async def animate_spaceship(canvas, row, column, frame1, frame2):
         draw_frame(canvas, row, column, frame1, negative=True)
 
         # update coordinates after pressing some arrow
-        row, column, _ = read_controls(canvas, row, column)
+        row_diff, column_diff, _ = read_controls(canvas)
+
+        # Horizontal restriction: right <-> left
+        if 0 < (column + column_diff) < (canvas_max_width - frame_columns):
+            column += column_diff
+
+        # Vertical restriction: up ↕ down
+        if 0 < (row + row_diff) < (canvas_max_height - frame_rows):
+            row += row_diff
 
         draw_frame(canvas, row, column, frame2)
         canvas.refresh()
