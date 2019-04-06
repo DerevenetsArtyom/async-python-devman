@@ -3,6 +3,8 @@ import curses
 import random
 import time
 
+from curses_tools import draw_frame
+
 
 async def fire(canvas, start_row, start_column, rows_speed=0, columns_speed=1):
     """Display animation of gun shot. Direction and speed can be specified."""
@@ -35,6 +37,7 @@ async def fire(canvas, start_row, start_column, rows_speed=0, columns_speed=1):
 
 
 async def blink(canvas, row, column, symbol):
+    # while loop needs to be here not to throw StopIteration and work forever...
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
         delay = random.randint(1, 20)
@@ -55,17 +58,52 @@ async def blink(canvas, row, column, symbol):
             await asyncio.sleep(0)
 
 
+async def animate_spaceship(canvas, row, column, frame1, frame2):
+    # while loop needs to be here not to throw StopIteration and work forever...
+    while True:
+        draw_frame(canvas, row, column, frame1)
+        canvas.refresh()
+        await asyncio.sleep(0)
+
+        # flush the previous frame before drawing the next one
+        draw_frame(canvas, row, column, frame1, negative=True)
+        draw_frame(canvas, row, column, frame2)
+        canvas.refresh()
+        await asyncio.sleep(0)
+
+
+def read_rocket_frames():
+    with open("files/rocket_frame_1.txt") as f:
+        frame1 = f.read()
+
+    with open("files/rocket_frame_2.txt") as f:
+        frame2 = f.read()
+
+    return frame1, frame2
+
+
 def draw(canvas):
     curses.curs_set(False)
     canvas.border()
     canvas.refresh()
 
+    frame1, frame2 = read_rocket_frames()
     canvas_height, canvas_width = canvas.getmaxyx()
     number_of_stars = random.randint(50, 60)
 
     # Add initial action (coroutine) - shot out of a cannon
     coroutine_fire = fire(canvas, canvas_height // 2, canvas_width // 2)
     coroutines = [coroutine_fire]
+
+    # Add action (coroutine) - animate spaceship
+    coroutine_rocket = animate_spaceship(
+        canvas,
+        canvas_height // 5,
+        canvas_width // 5,
+        frame1, frame2,
+    )
+
+    coroutines.append(coroutine_rocket)
 
     # Form list of coroutines (1 coroutine - 1 star)
     for i in range(number_of_stars):
