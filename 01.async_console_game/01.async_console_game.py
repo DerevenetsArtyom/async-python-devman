@@ -8,36 +8,6 @@ from curses_tools import draw_frame, read_controls, get_frame_size
 TIC_TIMEOUT = 0.1
 
 
-async def fire(canvas, start_row, start_column, rows_speed=0, columns_speed=1):
-    """Display animation of gun shot. Direction and speed can be specified."""
-
-    row, column = start_row, start_column
-
-    canvas.addstr(round(row), round(column), '*')
-    await asyncio.sleep(0)
-
-    canvas.addstr(round(row), round(column), 'O')
-    await asyncio.sleep(0)
-    canvas.addstr(round(row), round(column), ' ')
-
-    row += rows_speed
-    column += columns_speed
-
-    symbol = '-' if columns_speed else '|'
-
-    rows, columns = canvas.getmaxyx()
-    max_row, max_column = rows - 1, columns - 1
-
-    curses.beep()
-
-    while 0 < row < max_row and 0 < column < max_column:
-        canvas.addstr(round(row), round(column), symbol)
-        await asyncio.sleep(0)
-        canvas.addstr(round(row), round(column), ' ')
-        row += rows_speed
-        column += columns_speed
-
-
 async def blink(canvas, row, column, symbol):
     # while loop needs to be here not to throw StopIteration and work forever...
     while True:
@@ -67,7 +37,6 @@ async def animate_spaceship(canvas, row, column, frame1, frame2):
     # while loop needs to be here not to throw StopIteration and work forever...
     while True:
         draw_frame(canvas, row, column, frame1)
-        canvas.refresh()
         await asyncio.sleep(0)
 
         # flush the previous frame before drawing the next one
@@ -85,7 +54,6 @@ async def animate_spaceship(canvas, row, column, frame1, frame2):
             row += row_diff
 
         draw_frame(canvas, row, column, frame2)
-        canvas.refresh()
         await asyncio.sleep(0)
 
 
@@ -111,9 +79,6 @@ def draw(canvas):
     number_of_stars = random.randint(50, 60)
 
     coroutines = []
-    # Add initial action (coroutine) - shot out of a cannon
-    # coroutine_fire = fire(canvas, canvas_height // 2, canvas_width // 2)
-    # coroutines.append(coroutine_fire)
 
     # Add action (coroutine) - animate spaceship
     coroutine_rocket = animate_spaceship(
@@ -139,12 +104,11 @@ def draw(canvas):
         for coroutine in coroutines:
             try:
                 coroutine.send(None)
-            # 'coroutine_fire' could raise StopIteration when reach the borders
+                canvas.refresh()
             except StopIteration:
                 coroutines.remove(coroutine)
 
         time.sleep(TIC_TIMEOUT)
-        canvas.refresh()
 
 
 if __name__ == '__main__':
