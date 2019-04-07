@@ -1,10 +1,10 @@
 # Асинхронный Python
 
 # Installation
-Just `git clone` this repo on your local machine and run as Python script.
+Just `git clone` this repo on your local machine and run it as Python script.
 ```
-cd 01.async_console_game
-python3 01.async_console_game.py
+cd 01.async_console_game/
+python3 main.py
 ```
 
 # Table of contents
