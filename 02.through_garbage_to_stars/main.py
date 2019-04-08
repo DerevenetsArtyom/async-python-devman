@@ -67,6 +67,23 @@ def read_rocket_frames():
     return frame1, frame2
 
 
+async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
+    """Animate garbage, flying from top to bottom.
+    Column position will stay same, as specified on start."""
+    rows_number, columns_number = canvas.getmaxyx()
+
+    column = max(column, 0)
+    column = min(column, columns_number - 1)
+
+    row = 0
+
+    while row < rows_number:
+        draw_frame(canvas, row, column, garbage_frame)
+        await asyncio.sleep(0)
+        draw_frame(canvas, row, column, garbage_frame, negative=True)
+        row += speed
+
+
 def draw(canvas):
     curses.curs_set(False)  # Set the cursor state. 0 for invisible.
 
@@ -74,20 +91,26 @@ def draw(canvas):
     canvas.border()
     canvas.refresh()
 
-    frame1, frame2 = read_rocket_frames()
+    with open('files/trash_small.txt') as garbage_file:
+        frame = garbage_file.read()
+
+    fly_garbage_coroutine = fly_garbage(canvas, 10, frame)
+
+    # frame1, frame2 = read_rocket_frames()
     canvas_height, canvas_width = canvas.getmaxyx()
     number_of_stars = random.randint(50, 60)
 
     coroutines = []
 
     # Add action (coroutine) - animate spaceship
-    coroutine_rocket = animate_spaceship(
-        canvas,
-        canvas_height // 2,
-        canvas_width // 2,
-        frame1, frame2,
-    )
-    coroutines.append(coroutine_rocket)
+    # coroutine_rocket = animate_spaceship(
+    #     canvas,
+    #     canvas_height // 2,
+    #     canvas_width // 2,
+    #     frame1, frame2,
+    # )
+    # coroutines.append(coroutine_rocket)
+    coroutines.append(fly_garbage_coroutine)
 
     # Form list of coroutines (1 coroutine - 1 star)
     for i in range(number_of_stars):
