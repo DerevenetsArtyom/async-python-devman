@@ -10,26 +10,28 @@ TIC_TIMEOUT = 0.1
 coroutines = []
 
 
+async def sleep(tics):
+    # TODO: not sure, that this is what was especially needed
+    for i in range(tics):
+        await asyncio.sleep(0)
+
+
 async def blink(canvas, row, column, symbol):
     # while loop needs to be here not to throw StopIteration and work forever...
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
         delay = random.randint(1, 20)
 
-        for i in range(delay):
-            await asyncio.sleep(0)
+        await sleep(delay)
 
         canvas.addstr(row, column, symbol)
-        for i in range(delay):
-            await asyncio.sleep(0)
+        await sleep(delay)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for i in range(delay):
-            await asyncio.sleep(0)
+        await sleep(delay)
 
         canvas.addstr(row, column, symbol)
-        for i in range(delay):
-            await asyncio.sleep(0)
+        await sleep(delay)
 
 
 async def animate_spaceship(canvas, row, column, frame1, frame2):
