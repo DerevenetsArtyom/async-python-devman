@@ -78,7 +78,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
         row += speed
 
 
-async def run_asteroid_field(canvas, garbage_frame):
+async def fill_orbit_with_garbage(canvas, garbage_frame):
     _, canvas_width = canvas.getmaxyx()
 
     # Try to restrict border values to fill with 'garbage_frame' dimensions
@@ -129,7 +129,7 @@ def draw(canvas):
             garb_frame = random.choice([
                 small_garbage_frame, large_garbage_frame
             ])
-            fly_garbage_coroutine = run_asteroid_field(canvas, garb_frame)
+            fly_garbage_coroutine = fill_orbit_with_garbage(canvas, garb_frame)
             coroutines.append(fly_garbage_coroutine)
 
         for coroutine in coroutines:
