@@ -78,14 +78,22 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
         row += speed
 
 
-async def fill_orbit_with_garbage(canvas, garbage_frame):
-    _, canvas_width = canvas.getmaxyx()
+async def fill_orbit_with_garbage(canvas, canvas_width, small_garb_frame,
+                                  large_garb_frame):
+    while True:
+        # Add garbage only 10% of execution time.
+        # I'm not sure that this works totally correct.
+        probability = random.randrange(0, 100)
+        if probability < 10:
+            garb_frame = random.choice([small_garb_frame, large_garb_frame])
 
-    # Try to restrict border values to fill with 'garbage_frame' dimensions
-    column = random.randint(15, canvas_width - 10)
-    fly_garbage_coroutine = fly_garbage(canvas, column, garbage_frame)
-
-    await fly_garbage_coroutine
+            # Try to restrict border values to fill with 'garb_frame' dimensions
+            column = random.randint(15, canvas_width - 10)
+            fly_garbage_coroutine = fly_garbage(canvas, column, garb_frame)
+            coroutines.append(fly_garbage_coroutine)
+        # If there is no desired probability- return control
+        else:
+            await sleep(1)
 
 
 def draw(canvas):
@@ -110,6 +118,13 @@ def draw(canvas):
     )
     coroutines.append(coroutine_rocket)
 
+    fill_orbit_garbage_coroutine = fill_orbit_with_garbage(
+        canvas, canvas_width,
+        small_garbage_frame,
+        large_garbage_frame
+    )
+    coroutines.append(fill_orbit_garbage_coroutine)
+
     # Form list of coroutines (1 coroutine - 1 star)
     for i in range(number_of_stars):
         # Reducing max dimensions by 2 allows to avoid "curses.error"
@@ -122,16 +137,6 @@ def draw(canvas):
         coroutines.append(coroutine)
 
     while True:
-        # Add garbage only 10% of execution time.
-        # I'm not sure that this works totally correct.
-        probability = random.randrange(0, 100)
-        if probability < 10:
-            garb_frame = random.choice([
-                small_garbage_frame, large_garbage_frame
-            ])
-            fly_garbage_coroutine = fill_orbit_with_garbage(canvas, garb_frame)
-            coroutines.append(fly_garbage_coroutine)
-
         for coroutine in coroutines:
             try:
                 coroutine.send(None)
