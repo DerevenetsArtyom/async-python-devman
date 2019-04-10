@@ -1,0 +1,2 @@
+coroutines = []
+spaceship_frame = ""
