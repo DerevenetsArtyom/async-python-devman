@@ -34,8 +34,9 @@ async def blink(canvas, row, column, symbol):
         await sleep(delay)
 
 
-async def run_spaceship(canvas, canvas_max_height, canvas_max_width,
-                        row, column, frame_rows, frame_columns):
+async def run_spaceship(canvas, frame_rows, frame_columns):
+    canvas_max_height, canvas_max_width = canvas.getmaxyx()  # (26, 191)
+    row, column = canvas_max_height // 2, canvas_max_width // 2
 
     while True:
         draw_frame(canvas, row, column, spaceship_frame)
@@ -63,15 +64,10 @@ async def run_spaceship(canvas, canvas_max_height, canvas_max_width,
 
 
 async def animate_spaceship(canvas, frame1, frame2):
-    canvas_max_height, canvas_max_width = canvas.getmaxyx()  # (26, 191)
     frame_rows, frame_columns = get_frame_size(frame1)  # (9, 5)
-    start_row, start_column = canvas_max_height // 2, canvas_max_width // 2
 
     coroutines.append(
-        run_spaceship(
-            canvas, canvas_max_height, canvas_max_width,
-            start_row, start_column, frame_rows, frame_columns
-        )
+        run_spaceship(canvas, frame_rows, frame_columns)
     )
 
     global spaceship_frame
@@ -100,20 +96,22 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
         row += speed
 
 
-async def fill_orbit_with_garbage(canvas, canvas_width, small_garb_frame,
-                                  large_garb_frame):
+async def fill_orbit_with_garbage(canvas, small_frame, large_frame):
+    _, canvas_width = canvas.getmaxyx()
+
     while True:
         # Add garbage only 10% of execution time.
-        # I'm not sure that this works totally correct.
+        # XXX: I'm not sure that this works totally correct.
         probability = random.randrange(0, 100)
         if probability < 10:
-            garb_frame = random.choice([small_garb_frame, large_garb_frame])
+            garb_frame = random.choice([small_frame, large_frame])
 
             # Try to restrict border values to fill with 'garb_frame' dimensions
             column = random.randint(15, canvas_width - 10)
             fly_garbage_coroutine = fly_garbage(canvas, column, garb_frame)
             coroutines.append(fly_garbage_coroutine)
-        # If there is no desired probability- return control
+
+        # If there is no desired probability - return control
         else:
             await sleep(1)
 
@@ -125,9 +123,8 @@ def draw(canvas):
     curses.curs_set(False)  # Set the cursor state. 0 for invisible.
 
     canvas.nodelay(True)  # If flag is True, getch() will be non-blocking.
-    canvas.border()
-    canvas.refresh()
 
+    # Read files (blocking I/O) before passing it to the event loop
     frame1, frame2 = read_rocket_frames()
     small_garbage_frame, large_garbage_frame = read_garbage_frames()
 
@@ -139,9 +136,7 @@ def draw(canvas):
     coroutines.append(coroutine_rocket)
 
     fill_orbit_garbage_coroutine = fill_orbit_with_garbage(
-        canvas, canvas_width,
-        small_garbage_frame,
-        large_garbage_frame
+        canvas, small_garbage_frame, large_garbage_frame
     )
     coroutines.append(fill_orbit_garbage_coroutine)
 
@@ -163,6 +158,7 @@ def draw(canvas):
             except StopIteration:
                 coroutines.remove(coroutine)
 
+        canvas.border()
         canvas.refresh()
         time.sleep(TIC_TIMEOUT)
 
