@@ -5,9 +5,9 @@ import time
 
 from curses_tools import draw_frame, read_controls, get_frame_size
 from read_frames import read_garbage_frames, read_rocket_frames
+from global_vars import coroutines, spaceship_frame
 
 TIC_TIMEOUT = 0.1
-coroutines = []
 
 
 async def sleep(tics):
@@ -34,17 +34,18 @@ async def blink(canvas, row, column, symbol):
         await sleep(delay)
 
 
-async def animate_spaceship(canvas, row, column, frame1, frame2):
-    canvas_max_height, canvas_max_width = canvas.getmaxyx()  # (26, 191)
-    frame_rows, frame_columns = get_frame_size(frame1)  # (9, 5)
+async def run_spaceship(canvas, canvas_max_height, canvas_max_width,
+                        row, column, frame_rows, frame_columns):
 
-    # while loop needs to be here not to throw StopIteration and work forever...
     while True:
-        draw_frame(canvas, row, column, frame1)
+        draw_frame(canvas, row, column, spaceship_frame)
         await asyncio.sleep(0)
 
-        # flush the previous frame before drawing the next one
-        draw_frame(canvas, row, column, frame1, negative=True)
+        # old_frame = spaceship_frame
+        # XXX: 'spaceship_frame' будет успевать измениться за время работы await
+        # Стирайте старый кадр, а не текущий.
+        # (flush the previous frame before drawing the next one)
+        draw_frame(canvas, row, column, spaceship_frame, negative=True)
 
         # update coordinates after pressing some arrow
         row_diff, column_diff, _ = read_controls(canvas)
@@ -57,7 +58,28 @@ async def animate_spaceship(canvas, row, column, frame1, frame2):
         if 0 < (row + row_diff) < (canvas_max_height - frame_rows):
             row += row_diff
 
-        draw_frame(canvas, row, column, frame2)
+        draw_frame(canvas, row, column, spaceship_frame)
+        await asyncio.sleep(0)
+
+
+async def animate_spaceship(canvas, frame1, frame2):
+    canvas_max_height, canvas_max_width = canvas.getmaxyx()  # (26, 191)
+    frame_rows, frame_columns = get_frame_size(frame1)  # (9, 5)
+    start_row, start_column = canvas_max_height // 2, canvas_max_width // 2
+
+    coroutines.append(
+        run_spaceship(
+            canvas, canvas_max_height, canvas_max_width,
+            start_row, start_column, frame_rows, frame_columns
+        )
+    )
+
+    global spaceship_frame
+    while True:
+        spaceship_frame = frame1
+        await asyncio.sleep(0)
+
+        spaceship_frame = frame2
         await asyncio.sleep(0)
 
 
@@ -95,6 +117,9 @@ async def fill_orbit_with_garbage(canvas, canvas_width, small_garb_frame,
         else:
             await sleep(1)
 
+# Менять не координаты, а скорость
+    # physics.py
+
 
 def draw(canvas):
     curses.curs_set(False)  # Set the cursor state. 0 for invisible.
@@ -110,12 +135,7 @@ def draw(canvas):
     number_of_stars = random.randint(50, 60)
 
     # Add action (coroutine) - animate spaceship
-    coroutine_rocket = animate_spaceship(
-        canvas,
-        canvas_height // 2,
-        canvas_width // 2,
-        frame1, frame2,
-    )
+    coroutine_rocket = animate_spaceship(canvas, frame1, frame2)
     coroutines.append(coroutine_rocket)
 
     fill_orbit_garbage_coroutine = fill_orbit_with_garbage(
