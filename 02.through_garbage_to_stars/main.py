@@ -4,8 +4,9 @@ import random
 import time
 
 from curses_tools import draw_frame, read_controls, get_frame_size
+from global_vars import coroutines
+from physics import update_speed
 from read_frames import read_garbage_frames, read_rocket_frames
-from global_vars import coroutines, spaceship_frame
 
 TIC_TIMEOUT = 0.1
 
@@ -37,6 +38,7 @@ async def blink(canvas, row, column, symbol):
 async def run_spaceship(canvas, frame_rows, frame_columns):
     canvas_max_height, canvas_max_width = canvas.getmaxyx()  # (26, 191)
     row, column = canvas_max_height // 2, canvas_max_width // 2
+    row_speed = column_speed = 0
 
     while True:
         draw_frame(canvas, row, column, spaceship_frame)
@@ -51,13 +53,18 @@ async def run_spaceship(canvas, frame_rows, frame_columns):
         # update coordinates after pressing some arrow
         row_diff, column_diff, _ = read_controls(canvas)
 
+        row_speed, column_speed = update_speed(
+            row_speed, column_speed,
+            row_diff, column_diff
+        )
+
         # Horizontal restriction: right <-> left
-        if 0 < (column + column_diff) < (canvas_max_width - frame_columns):
-            column += column_diff
+        if 0 < (column + column_speed) < (canvas_max_width - frame_columns):
+            column += column_speed
 
         # Vertical restriction: up ↕ down
-        if 0 < (row + row_diff) < (canvas_max_height - frame_rows):
-            row += row_diff
+        if 0 < (row + row_speed) < (canvas_max_height - frame_rows):
+            row += row_speed
 
         draw_frame(canvas, row, column, spaceship_frame)
         await asyncio.sleep(0)
@@ -115,13 +122,9 @@ async def fill_orbit_with_garbage(canvas, small_frame, large_frame):
         else:
             await sleep(1)
 
-# Менять не координаты, а скорость
-    # physics.py
-
 
 def draw(canvas):
     curses.curs_set(False)  # Set the cursor state. 0 for invisible.
-
     canvas.nodelay(True)  # If flag is True, getch() will be non-blocking.
 
     # Read files (blocking I/O) before passing it to the event loop
