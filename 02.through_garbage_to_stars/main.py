@@ -11,6 +11,24 @@ from read_frames import read_garbage_frames, read_rocket_frames
 TIC_TIMEOUT = 0.1
 
 
+async def fire(canvas, start_row, start_column):
+    row, column = start_row, start_column + 2  # Adjust to center of frame
+    rows_speed = -1  # Emulate moving from the bottom to the top
+    symbol = '|'
+    row += rows_speed
+
+    rows, columns = canvas.getmaxyx()
+    max_row, max_column = rows - 1, columns - 1
+
+    curses.beep()
+
+    while 0 < row < max_row and 0 < column < max_column:
+        canvas.addstr(round(row), round(column), symbol)
+        await asyncio.sleep(0)
+        canvas.addstr(round(row), round(column), ' ')
+        row += rows_speed
+
+
 async def sleep(tics):
     # TODO: not sure, that this is what was especially needed
     for i in range(tics):
@@ -50,8 +68,11 @@ async def run_spaceship(canvas, frame_rows, frame_columns):
         # (flush the previous frame before drawing the next one)
         draw_frame(canvas, row, column, spaceship_frame, negative=True)
 
-        # update coordinates after pressing some arrow
-        row_diff, column_diff, _ = read_controls(canvas)
+        # update coordinates after pressing some arrow key
+        row_diff, column_diff, space_pressed = read_controls(canvas)
+
+        if space_pressed:
+            coroutines.append(fire(canvas, row, column))
 
         row_speed, column_speed = update_speed(
             row_speed, column_speed,
