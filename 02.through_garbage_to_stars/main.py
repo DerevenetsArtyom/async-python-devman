@@ -4,9 +4,10 @@ import random
 import time
 
 from curses_tools import draw_frame, read_controls, get_frame_size
-from global_vars import coroutines
+from global_vars import coroutines, obstacles
 from physics import update_speed
 from read_frames import read_garbage_frames, read_rocket_frames
+from obstacles import Obstacle, show_obstacles
 
 TIC_TIMEOUT = 0.1
 
@@ -30,7 +31,6 @@ async def fire(canvas, start_row, start_column):
 
 
 async def sleep(tics):
-    # TODO: not sure, that this is what was especially needed
     for i in range(tics):
         await asyncio.sleep(0)
 
@@ -107,21 +107,40 @@ async def animate_spaceship(canvas, frame1, frame2):
         await asyncio.sleep(0)
 
 
+# Советы
+#   Если рамка полностью затирает мусор, то обновите код функции draw_frame().
+
 async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     """Animate garbage, flying from top to bottom.
     Column position will stay same, as specified on start."""
     rows_number, columns_number = canvas.getmaxyx()
+    rows_size, columns_size = get_frame_size(garbage_frame)  # (9, 5)
 
     column = max(column, 0)
     column = min(column, columns_number - 1)
-
     row = 0
 
-    while row < rows_number:
-        draw_frame(canvas, row, column, garbage_frame)
+    # TODO: should it be created here?
+    obstacle = Obstacle(row, column, rows_size, columns_size)
+    obstacles.append(obstacle)
+
+    coro = show_obstacles(canvas, obstacles)
+    # TODO передать управление корутине coro
+    coroutines.append(coro)
+
+    while obstacle.row < rows_number:
         await asyncio.sleep(0)
-        draw_frame(canvas, row, column, garbage_frame, negative=True)
-        row += speed
+        # draw_frame(canvas, row, column, garbage_frame)
+        # await asyncio.sleep(0)
+        # draw_frame(canvas, row, column, garbage_frame, negative=True)
+        obstacle.row += speed
+
+    # Евгений Е.
+    #   Чтобы в obstacles не накапливались улетевшие за край препятствия,
+    #   используйте try finally, это надежнее.
+
+    # TODO: it doesn't always work
+    coroutines.remove(obstacle)
 
 
 async def fill_orbit_with_garbage(canvas, small_frame, large_frame):
@@ -156,8 +175,8 @@ def draw(canvas):
     number_of_stars = random.randint(50, 60)
 
     # Add action (coroutine) - animate spaceship
-    coroutine_rocket = animate_spaceship(canvas, frame1, frame2)
-    coroutines.append(coroutine_rocket)
+    rocket_coroutine = animate_spaceship(canvas, frame1, frame2)
+    coroutines.append(rocket_coroutine)
 
     fill_orbit_garbage_coroutine = fill_orbit_with_garbage(
         canvas, small_garbage_frame, large_garbage_frame
@@ -176,6 +195,7 @@ def draw(canvas):
         coroutines.append(coroutine)
 
     while True:
+        # canvas.addstr(5, 5, str(len(coroutines)))
         for coroutine in coroutines:
             try:
                 coroutine.send(None)
