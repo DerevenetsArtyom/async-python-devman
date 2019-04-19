@@ -118,7 +118,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     rows_size, columns_size = get_frame_size(garbage_frame)  # (9, 5)
 
     column = max(column, 0)
-    column = min(column, columns_number - 1)
+    column = min(column, columns_number - columns_size - 2)
     row = 0
 
     obstacle = Obstacle(row, column, rows_size, columns_size)
@@ -135,11 +135,11 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 
 
 async def fill_orbit_with_garbage(canvas, small_frame, large_frame):
-    _, canvas_width = canvas.getmaxyx()
+    _, canvas_width = canvas.getmaxyx()  # (26, 191)
 
     while True:
         # Add garbage only 10% of execution time.
-        # XXX: I'm not sure that this works totally correct.
+        # XXX: I'm not sure that this works totally correctly.
         probability = random.randrange(0, 100)
         if probability < 10:
             garb_frame = random.choice([small_frame, large_frame])
