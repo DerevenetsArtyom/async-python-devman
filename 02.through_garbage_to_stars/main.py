@@ -3,14 +3,15 @@ import curses
 import random
 import time
 
-from curses_tools import draw_frame, read_controls, get_frame_size
-from global_vars import coroutines
-from obstacles import Obstacle, show_obstacles
-from physics import update_speed
+from provided.curses_tools import draw_frame, read_controls, get_frame_size
+from provided.obstacles import Obstacle, show_obstacles
+from provided.physics import update_speed
 from read_frames import read_garbage_frames, read_rocket_frames
 
 TIC_TIMEOUT = 0.1
 obstacles_list = []
+spaceship_frame = ""
+coroutines = []
 
 
 async def fire(canvas, start_row, start_column):

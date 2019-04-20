@@ -1,2 +1,0 @@
-coroutines = []
-spaceship_frame = ""
