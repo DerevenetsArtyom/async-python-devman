@@ -61,14 +61,15 @@ async def run_spaceship(canvas, frame_rows, frame_columns):
     row_speed = column_speed = 0
 
     while True:
-        draw_frame(canvas, row, column, spaceship_frame)
+        draw_frame(canvas, row, column, spaceship_frame, spaceship=True)
         await asyncio.sleep(0)
 
         # old_frame = spaceship_frame
         # XXX: 'spaceship_frame' будет успевать измениться за время работы await
         # Стирайте старый кадр, а не текущий.
         # (flush the previous frame before drawing the next one)
-        draw_frame(canvas, row, column, spaceship_frame, negative=True)
+        draw_frame(canvas, row, column, spaceship_frame,
+                   negative=True, spaceship=True)
 
         # update coordinates after pressing some arrow key
         row_diff, column_diff, space_pressed = read_controls(canvas)
@@ -89,7 +90,7 @@ async def run_spaceship(canvas, frame_rows, frame_columns):
         if 0 < (row + row_speed) < (canvas_max_height - frame_rows):
             row += row_speed
 
-        draw_frame(canvas, row, column, spaceship_frame)
+        draw_frame(canvas, row, column, spaceship_frame, spaceship=True)
         await asyncio.sleep(0)
 
 
@@ -109,9 +110,6 @@ async def animate_spaceship(canvas, frame1, frame2):
         await asyncio.sleep(0)
 
 
-# Советы
-#   Если рамка полностью затирает мусор, то обновите код функции draw_frame().
-
 async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     """Animate garbage, flying from top to bottom.
     Column position will stay same, as specified on start."""
@@ -130,9 +128,12 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 
     # Move obstacle down the screen until it reaches the end of the screen.
     # When reached - remove that obstacle from 'obstacles_list'.
-    while obstacle.row < rows_number:
-        obstacle.row += speed
+    while row < rows_number:
+        draw_frame(canvas, row, column, garbage_frame)
         await asyncio.sleep(0)
+        draw_frame(canvas, row, column, garbage_frame, negative=True)
+        obstacle.row += speed
+        row += speed
 
     obstacles_list.remove(obstacle)
 
