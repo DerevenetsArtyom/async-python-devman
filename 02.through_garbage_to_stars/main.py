@@ -21,6 +21,11 @@ async def fire(canvas, start_row, start_column):
     #  curses.beep()
 
     while 0 < row:
+        # Check if collision with obstacle is occurred
+        for obstacle in obstacles_list:
+            if obstacle.has_collision(row, column):
+                return
+
         canvas.addstr(round(row), round(column), '|')
         await asyncio.sleep(0)
         canvas.addstr(round(row), round(column), ' ')
