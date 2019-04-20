@@ -14,21 +14,17 @@ obstacles_list = []
 
 
 async def fire(canvas, start_row, start_column):
-    row, column = start_row, start_column + 2  # Adjust to center of frame
-    rows_speed = -1  # Emulate moving from the bottom to the top
-    symbol = '|'
-    row += rows_speed
+    row = start_row - 1  # Shift up start row not to overlap with rocket frame
+    column = start_column + 2  # Adjust to the center of rocket frame
 
-    rows, columns = canvas.getmaxyx()
-    max_row, max_column = rows - 1, columns - 1
+    # TODO: it was here, but I'm not sure if that is needed:
+    #  curses.beep()
 
-    curses.beep()
-
-    while 0 < row < max_row and 0 < column < max_column:
-        canvas.addstr(round(row), round(column), symbol)
+    while 0 < row:
+        canvas.addstr(round(row), round(column), '|')
         await asyncio.sleep(0)
         canvas.addstr(round(row), round(column), ' ')
-        row += rows_speed
+        row -= 1  # Emulate moving from the bottom to the top
 
 
 async def sleep(tics):
@@ -127,6 +123,8 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     coro = show_obstacles(canvas, obstacles_list)
     coroutines.append(coro)
 
+    # Move obstacle down the screen until it reaches the end of the screen.
+    # When reached - remove that obstacle from 'obstacles_list'.
     while obstacle.row < rows_number:
         obstacle.row += speed
         await asyncio.sleep(0)
@@ -163,7 +161,7 @@ def draw(canvas):
     small_garbage_frame, large_garbage_frame = read_garbage_frames()
 
     canvas_height, canvas_width = canvas.getmaxyx()
-    number_of_stars = random.randint(50, 60)
+    number_of_stars = random.randint(5, 6)
 
     # Add action (coroutine) - animate spaceship
     rocket_coroutine = animate_spaceship(canvas, frame1, frame2)
