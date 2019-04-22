@@ -6,54 +6,33 @@ import time
 from provided.curses_tools import draw_frame, read_controls, get_frame_size
 from provided.obstacles import Obstacle, show_obstacles
 from provided.physics import update_speed
+from utils import sleep, blink
 from read_frames import read_garbage_frames, read_rocket_frames
 
 TIC_TIMEOUT = 0.1
-obstacles_list = []
 spaceship_frame = ""
+obstacles_list = []
 coroutines = []
+obstacles_in_last_collisions = []  # obstacles were hit
 
 
 async def fire(canvas, start_row, start_column):
     row = start_row - 1  # Shift up start row not to overlap with rocket frame
     column = start_column + 2  # Adjust to the center of rocket frame
 
-    # TODO: it was here, but I'm not sure if that is needed:
-    #  curses.beep()
-
     while 0 < row:
         # Check if collision with obstacle is occurred
         for obstacle in obstacles_list:
             if obstacle.has_collision(row, column):
+                # Register obstacle-coroutine in 'obstacles_in_last_collisions'
+                obstacles_in_last_collisions.append(obstacle)
+                # Stop the coroutine by returning None
                 return
 
         canvas.addstr(round(row), round(column), '|')
         await asyncio.sleep(0)
         canvas.addstr(round(row), round(column), ' ')
         row -= 1  # Emulate moving from the bottom to the top
-
-
-async def sleep(tics):
-    for i in range(tics):
-        await asyncio.sleep(0)
-
-
-async def blink(canvas, row, column, symbol):
-    # while loop needs to be here not to throw StopIteration and work forever...
-    while True:
-        canvas.addstr(row, column, symbol, curses.A_DIM)
-        delay = random.randint(1, 20)
-
-        await sleep(delay)
-
-        canvas.addstr(row, column, symbol)
-        await sleep(delay)
-
-        canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await sleep(delay)
-
-        canvas.addstr(row, column, symbol)
-        await sleep(delay)
 
 
 async def run_spaceship(canvas, frame_rows, frame_columns):
@@ -135,6 +114,12 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
         draw_frame(canvas, row, column, garbage_frame, negative=True)
         obstacle.row += speed
         row += speed
+
+        # Stop drawing garbage and obstacle frame if it was hit
+        if obstacle in obstacles_in_last_collisions:
+            obstacles_list.remove(obstacle)
+            obstacles_in_last_collisions.remove(obstacle)
+            return
 
     obstacles_list.remove(obstacle)
 
