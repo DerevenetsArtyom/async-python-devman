@@ -17,3 +17,7 @@ def read_garbage_frames():
 
     return small_garbage_frame, large_garbage_frame
 
+
+def read_game_over_frame():
+    with open('files/game_over.txt') as f:
+        return f.read()
