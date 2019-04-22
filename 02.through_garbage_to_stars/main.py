@@ -4,10 +4,11 @@ import random
 import time
 
 from provided.curses_tools import draw_frame, read_controls, get_frame_size
+from provided.explosion import explode
 from provided.obstacles import Obstacle, show_obstacles
 from provided.physics import update_speed
-from utils import sleep, blink
 from read_frames import read_garbage_frames, read_rocket_frames
+from utils import sleep, blink
 
 TIC_TIMEOUT = 0.1
 spaceship_frame = ""
@@ -115,10 +116,16 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
         obstacle.row += speed
         row += speed
 
-        # Stop drawing garbage and obstacle frame if it was hit
+        # Stop drawing garbage and obstacle frame if it was hit:
+        # remove that coroutines from corresponding lists and show explosion.
         if obstacle in obstacles_in_last_collisions:
             obstacles_list.remove(obstacle)
             obstacles_in_last_collisions.remove(obstacle)
+            await explode(
+                canvas,
+                row + (rows_size // 2),
+                column + (columns_size // 2)
+            )
             return
 
     obstacles_list.remove(obstacle)
