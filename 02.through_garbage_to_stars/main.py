@@ -39,8 +39,9 @@ async def fire(canvas, start_row, start_column):
 
 async def show_game_over(canvas, frame):
     canvas_max_height, canvas_max_width = canvas.getmaxyx()
-    frame_rows, frame_columns = get_frame_size(frame)  # (9, 5)
+    frame_rows, frame_columns = get_frame_size(frame)
 
+    # Try to adjust caption to the center of the screen
     row = (canvas_max_height - frame_rows) // 2
     column = (canvas_max_width - frame_columns) // 2
 
@@ -50,7 +51,7 @@ async def show_game_over(canvas, frame):
 
 
 async def run_spaceship(canvas, frame_rows, frame_columns, game_over_frame):
-    canvas_max_height, canvas_max_width = canvas.getmaxyx()  # (26, 191)
+    canvas_max_height, canvas_max_width = canvas.getmaxyx()
     row, column = canvas_max_height // 2, canvas_max_width // 2
     row_speed = column_speed = 0
 
@@ -94,7 +95,7 @@ async def run_spaceship(canvas, frame_rows, frame_columns, game_over_frame):
 
 
 async def animate_spaceship(canvas, frame1, frame2, game_over_frame):
-    frame_rows, frame_columns = get_frame_size(frame1)  # (9, 5)
+    frame_rows, frame_columns = get_frame_size(frame1)
 
     coroutines.append(
         run_spaceship(canvas, frame_rows, frame_columns, game_over_frame)
@@ -113,7 +114,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     """Animate garbage, flying from top to bottom.
     Column position will stay same, as specified on start."""
     rows_number, columns_number = canvas.getmaxyx()
-    rows_size, columns_size = get_frame_size(garbage_frame)  # (9, 5)
+    rows_size, columns_size = get_frame_size(garbage_frame)
 
     column = max(column, 0)
     column = min(column, columns_number - columns_size - 2)
@@ -150,7 +151,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 
 
 async def fill_orbit_with_garbage(canvas, small_frame, large_frame):
-    _, canvas_width = canvas.getmaxyx()  # (26, 191)
+    _, canvas_width = canvas.getmaxyx()
 
     while True:
         # Add garbage only 10% of execution time.
@@ -203,7 +204,6 @@ def draw(canvas):
         coroutines.append(coroutine)
 
     while True:
-        # canvas.addstr(5, 5, str(len(coroutines)))
         for coroutine in coroutines:
             try:
                 coroutine.send(None)
