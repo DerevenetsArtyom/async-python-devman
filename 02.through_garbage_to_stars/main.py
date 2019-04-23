@@ -7,7 +7,8 @@ from provided.curses_tools import draw_frame, read_controls, get_frame_size
 from provided.explosion import explode
 from provided.obstacles import Obstacle, show_obstacles
 from provided.physics import update_speed
-from read_frames import read_garbage_frames, read_rocket_frames
+from read_frames import (read_garbage_frames, read_rocket_frames,
+                         read_game_over_frame)
 from utils import sleep, blink
 
 TIC_TIMEOUT = 0.1
@@ -36,12 +37,29 @@ async def fire(canvas, start_row, start_column):
         row -= 1  # Emulate moving from the bottom to the top
 
 
-async def run_spaceship(canvas, frame_rows, frame_columns):
+async def show_game_over(canvas, frame):
+    canvas_max_height, canvas_max_width = canvas.getmaxyx()
+    frame_rows, frame_columns = get_frame_size(frame)  # (9, 5)
+
+    row = (canvas_max_height - frame_rows) // 2
+    column = (canvas_max_width - frame_columns) // 2
+
+    while True:
+        draw_frame(canvas, row, column, frame)
+        await asyncio.sleep(0)
+
+
+async def run_spaceship(canvas, frame_rows, frame_columns, game_over_frame):
     canvas_max_height, canvas_max_width = canvas.getmaxyx()  # (26, 191)
     row, column = canvas_max_height // 2, canvas_max_width // 2
     row_speed = column_speed = 0
 
     while True:
+        for obstacle in obstacles_list:
+            if obstacle.has_collision(row, column):
+                coroutines.append(show_game_over(canvas, game_over_frame))
+                return
+
         draw_frame(canvas, row, column, spaceship_frame, spaceship=True)
         await asyncio.sleep(0)
 
@@ -75,11 +93,11 @@ async def run_spaceship(canvas, frame_rows, frame_columns):
         await asyncio.sleep(0)
 
 
-async def animate_spaceship(canvas, frame1, frame2):
+async def animate_spaceship(canvas, frame1, frame2, game_over_frame):
     frame_rows, frame_columns = get_frame_size(frame1)  # (9, 5)
 
     coroutines.append(
-        run_spaceship(canvas, frame_rows, frame_columns)
+        run_spaceship(canvas, frame_rows, frame_columns, game_over_frame)
     )
 
     global spaceship_frame
@@ -158,12 +176,14 @@ def draw(canvas):
     # Read files (blocking I/O) before passing it to the event loop
     frame1, frame2 = read_rocket_frames()
     small_garbage_frame, large_garbage_frame = read_garbage_frames()
+    game_over_frame = read_game_over_frame()
 
     canvas_height, canvas_width = canvas.getmaxyx()
     number_of_stars = random.randint(5, 6)
 
     # Add action (coroutine) - animate spaceship
-    rocket_coroutine = animate_spaceship(canvas, frame1, frame2)
+    rocket_coroutine = animate_spaceship(canvas, frame1, frame2,
+                                         game_over_frame)
     coroutines.append(rocket_coroutine)
 
     fill_orbit_garbage_coroutine = fill_orbit_with_garbage(
