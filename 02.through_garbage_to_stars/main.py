@@ -122,9 +122,6 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     obstacle = Obstacle(row, column, rows_size, columns_size)
     obstacles_list.append(obstacle)
 
-    coro = show_obstacles(canvas, obstacles_list)
-    coroutines.append(coro)
-
     # Move obstacle down the screen until it reaches the end of the screen.
     # When reached - remove that obstacle from 'obstacles_list'.
     while row < rows_number:
@@ -179,9 +176,6 @@ def draw(canvas):
     small_garbage_frame, large_garbage_frame = read_garbage_frames()
     game_over_frame = read_game_over_frame()
 
-    canvas_height, canvas_width = canvas.getmaxyx()
-    number_of_stars = random.randint(RANGE_OF_STARS)
-
     rocket_coroutine = animate_spaceship(canvas, frame1, frame2,
                                          game_over_frame)
     coroutines.append(rocket_coroutine)
@@ -190,6 +184,12 @@ def draw(canvas):
         canvas, small_garbage_frame, large_garbage_frame
     )
     coroutines.append(fill_orbit_garbage_coroutine)
+
+    show_obstacles_coroutine = show_obstacles(canvas, obstacles_list)
+    coroutines.append(show_obstacles_coroutine)
+
+    canvas_height, canvas_width = canvas.getmaxyx()
+    number_of_stars = random.randint(*RANGE_OF_STARS)
 
     # Form list of coroutines (1 coroutine - 1 star)
     for i in range(number_of_stars):
