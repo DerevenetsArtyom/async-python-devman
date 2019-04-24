@@ -60,15 +60,13 @@ async def run_spaceship(canvas, frame_rows, frame_columns, game_over_frame):
                 coroutines.append(show_game_over(canvas, game_over_frame))
                 return
 
-        draw_frame(canvas, row, column, spaceship_frame, spaceship=True)
+        draw_frame(canvas, row, column, spaceship_frame)
+        old_frame = spaceship_frame
         await asyncio.sleep(0)
 
-        # old_frame = spaceship_frame
-        # XXX: 'spaceship_frame' будет успевать измениться за время работы await
-        # Стирайте старый кадр, а не текущий.
-        # (flush the previous frame before drawing the next one)
-        draw_frame(canvas, row, column, spaceship_frame,
-                   negative=True, spaceship=True)
+        # 'spaceship_frame' could be changed while 'await' works.
+        # Flush previous frame (and current)
+        draw_frame(canvas, row, column, old_frame, negative=True)
 
         # update coordinates after pressing some arrow key
         row_diff, column_diff, space_pressed = read_controls(canvas)

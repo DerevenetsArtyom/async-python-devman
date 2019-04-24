@@ -35,8 +35,7 @@ def read_controls(canvas):
     return rows_direction, columns_direction, space_pressed
 
 
-def draw_frame(canvas, start_row, start_column, text,
-               negative=False, spaceship=False):
+def draw_frame(canvas, start_row, start_column, text, negative=False):
     """Draw multiline text fragment on canvas.
     Erase text instead of drawing if negative=True is specified."""
 
@@ -56,8 +55,7 @@ def draw_frame(canvas, start_row, start_column, text,
             if column >= columns_number:
                 break
 
-            # Avoid that condition for spaceship frame, cause it goes strange
-            if symbol == ' ' and not spaceship:
+            if symbol == ' ':
                 continue
 
             # Check that current position it is not in a lower right corner of
