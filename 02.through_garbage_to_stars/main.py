@@ -11,6 +11,7 @@ from read_frames import (read_garbage_frames, read_rocket_frames,
                          read_game_over_frame)
 from utils import sleep, blink
 
+RANGE_OF_STARS = (5, 6)
 TIC_TIMEOUT = 0.1
 spaceship_frame = ""
 obstacles_list = []
@@ -157,9 +158,10 @@ async def fill_orbit_with_garbage(canvas, small_frame, large_frame):
         probability = random.randrange(0, 100)
         if probability < 10:
             garb_frame = random.choice([small_frame, large_frame])
+            _, frame_columns = get_frame_size(garb_frame)
 
             # Try to restrict border values to fill with 'garb_frame' dimensions
-            column = random.randint(15, canvas_width - 10)
+            column = random.randint(frame_columns, canvas_width - frame_columns)
             fly_garbage_coroutine = fly_garbage(canvas, column, garb_frame)
             coroutines.append(fly_garbage_coroutine)
 
@@ -178,7 +180,7 @@ def draw(canvas):
     game_over_frame = read_game_over_frame()
 
     canvas_height, canvas_width = canvas.getmaxyx()
-    number_of_stars = random.randint(5, 6)
+    number_of_stars = random.randint(RANGE_OF_STARS)
 
     rocket_coroutine = animate_spaceship(canvas, frame1, frame2,
                                          game_over_frame)
