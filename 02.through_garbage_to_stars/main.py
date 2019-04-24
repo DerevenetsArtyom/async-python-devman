@@ -89,9 +89,6 @@ async def run_spaceship(canvas, frame_rows, frame_columns, game_over_frame):
         if 0 < (row + row_speed) < (canvas_max_height - frame_rows):
             row += row_speed
 
-        draw_frame(canvas, row, column, spaceship_frame, spaceship=True)
-        await asyncio.sleep(0)
-
 
 async def animate_spaceship(canvas, frame1, frame2, game_over_frame):
     frame_rows, frame_columns = get_frame_size(frame1)
