@@ -1,6 +1,5 @@
 import asyncio
 import curses
-import random
 
 
 async def sleep(tics):
@@ -8,19 +7,16 @@ async def sleep(tics):
         await asyncio.sleep(0)
 
 
-async def blink(canvas, row, column, symbol):
-    # while loop needs to be here not to throw StopIteration and work forever...
+async def blink(canvas, row, column, symbol, offset_tics):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        delay = random.randint(1, 20)
-
-        await sleep(delay)
+        await sleep(offset_tics)
 
         canvas.addstr(row, column, symbol)
-        await sleep(delay)
+        await sleep(offset_tics)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await sleep(delay)
+        await sleep(offset_tics)
 
         canvas.addstr(row, column, symbol)
-        await sleep(delay)
+        await sleep(offset_tics)

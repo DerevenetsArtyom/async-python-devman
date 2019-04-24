@@ -196,8 +196,9 @@ def draw(canvas):
         column = random.randint(1, canvas_width - 2)
 
         symbol = random.choice("+*.:")
+        offset_tics = random.randint(1, 20)
 
-        coroutine = blink(canvas, row, column, symbol)
+        coroutine = blink(canvas, row, column, symbol, offset_tics)
         coroutines.append(coroutine)
 
     while True:
