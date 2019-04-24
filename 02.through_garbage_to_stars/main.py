@@ -15,7 +15,7 @@ TIC_TIMEOUT = 0.1
 spaceship_frame = ""
 obstacles_list = []
 coroutines = []
-obstacles_in_last_collisions = []  # obstacles were hit
+obstacles_in_last_collisions = []
 
 
 async def fire(canvas, start_row, start_column):
@@ -23,25 +23,23 @@ async def fire(canvas, start_row, start_column):
     column = start_column + 2  # Adjust to the center of rocket frame
 
     while 0 < row:
-        # Check if collision with obstacle is occurred
         for obstacle in obstacles_list:
             if obstacle.has_collision(row, column):
-                # Register obstacle-coroutine in 'obstacles_in_last_collisions'
                 obstacles_in_last_collisions.append(obstacle)
-                # Stop the coroutine by returning None
                 return
 
         canvas.addstr(round(row), round(column), '|')
         await asyncio.sleep(0)
         canvas.addstr(round(row), round(column), ' ')
-        row -= 1  # Emulate moving from the bottom to the top
+        # Emulate moving from the bottom to the top
+        row -= 1
 
 
 async def show_game_over(canvas, frame):
     canvas_max_height, canvas_max_width = canvas.getmaxyx()
     frame_rows, frame_columns = get_frame_size(frame)
 
-    # Try to adjust caption to the center of the screen
+    # Place the caption in the center of the screen
     row = (canvas_max_height - frame_rows) // 2
     column = (canvas_max_width - frame_columns) // 2
 
@@ -182,7 +180,6 @@ def draw(canvas):
     canvas_height, canvas_width = canvas.getmaxyx()
     number_of_stars = random.randint(5, 6)
 
-    # Add action (coroutine) - animate spaceship
     rocket_coroutine = animate_spaceship(canvas, frame1, frame2,
                                          game_over_frame)
     coroutines.append(rocket_coroutine)
