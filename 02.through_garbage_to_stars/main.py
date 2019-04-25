@@ -5,18 +5,22 @@ import time
 
 from provided.curses_tools import draw_frame, read_controls, get_frame_size
 from provided.explosion import explode
+from provided.game_scenario import get_garbage_delay_tics, PHRASES
 from provided.obstacles import Obstacle, show_obstacles
 from provided.physics import update_speed
 from read_frames import (read_garbage_frames, read_rocket_frames,
                          read_game_over_frame)
 from utils import sleep, blink
 
-RANGE_OF_STARS = (5, 6)
+RANGE_OF_STARS = (50, 60)
 TIC_TIMEOUT = 0.1
 spaceship_frame = ""
 obstacles_list = []
 coroutines = []
 obstacles_in_last_collisions = []
+year = 1957  # Year of launch of the first artificial Earth satellite
+game_is_over = False
+gun_works = False
 
 
 async def fire(canvas, start_row, start_column):
@@ -50,6 +54,8 @@ async def show_game_over(canvas, frame):
 
 
 async def run_spaceship(canvas, frame_rows, frame_columns, game_over_frame):
+    global game_is_over
+
     canvas_max_height, canvas_max_width = canvas.getmaxyx()
     row, column = canvas_max_height // 2, canvas_max_width // 2
     row_speed = column_speed = 0
@@ -58,6 +64,7 @@ async def run_spaceship(canvas, frame_rows, frame_columns, game_over_frame):
         for obstacle in obstacles_list:
             if obstacle.has_collision(row, column):
                 coroutines.append(show_game_over(canvas, game_over_frame))
+                game_is_over = True
                 return
 
         draw_frame(canvas, row, column, spaceship_frame)
@@ -65,13 +72,13 @@ async def run_spaceship(canvas, frame_rows, frame_columns, game_over_frame):
         await asyncio.sleep(0)
 
         # 'spaceship_frame' could be changed while 'await' works.
-        # Flush previous frame (and current)
+        # Flush previous frame (and not current)
         draw_frame(canvas, row, column, old_frame, negative=True)
 
         # update coordinates after pressing some arrow key
         row_diff, column_diff, space_pressed = read_controls(canvas)
 
-        if space_pressed:
+        if space_pressed and gun_works:
             coroutines.append(fire(canvas, row, column))
 
         row_speed, column_speed = update_speed(
@@ -145,10 +152,10 @@ async def fill_orbit_with_garbage(canvas, small_frame, large_frame):
     _, canvas_width = canvas.getmaxyx()
 
     while True:
-        # Add garbage only 10% of execution time.
-        # XXX: I'm not sure that this works totally correctly.
-        probability = random.randrange(0, 100)
-        if probability < 10:
+        delay = get_garbage_delay_tics(year)
+        if delay:
+            await sleep(delay)
+
             garb_frame = random.choice([small_frame, large_frame])
             _, frame_columns = get_frame_size(garb_frame)
 
@@ -157,9 +164,32 @@ async def fill_orbit_with_garbage(canvas, small_frame, large_frame):
             fly_garbage_coroutine = fly_garbage(canvas, column, garb_frame)
             coroutines.append(fly_garbage_coroutine)
 
-        # If there is no desired probability - return control
-        else:
-            await sleep(1)
+        await asyncio.sleep(0)
+
+
+async def show_current_year(canvas, time_game_started):
+    global year, gun_works
+
+    small_window = canvas.derwin(0, 0)
+    ratio = 2
+
+    while True:
+        # Allow to use gun on higher levels (years)
+        if year >= 2000:
+            gun_works = True
+
+        if game_is_over:
+            return
+
+        time_now = time.monotonic()
+        diff = round(time_now - time_game_started, 1)
+
+        if diff % ratio == 0.0:
+            year += 1
+
+        message = f"Year now: {year} - {PHRASES.get(year, '')}"
+        small_window.addstr(5, 5, message)
+        await asyncio.sleep(0)
 
 
 def draw(canvas):
@@ -171,8 +201,9 @@ def draw(canvas):
     small_garbage_frame, large_garbage_frame = read_garbage_frames()
     game_over_frame = read_game_over_frame()
 
-    rocket_coroutine = animate_spaceship(canvas, frame1, frame2,
-                                         game_over_frame)
+    rocket_coroutine = animate_spaceship(
+        canvas, frame1, frame2, game_over_frame
+    )
     coroutines.append(rocket_coroutine)
 
     fill_orbit_garbage_coroutine = fill_orbit_with_garbage(
@@ -182,6 +213,9 @@ def draw(canvas):
 
     show_obstacles_coroutine = show_obstacles(canvas, obstacles_list)
     coroutines.append(show_obstacles_coroutine)
+
+    time_game_started = time.monotonic()
+    coroutines.append(show_current_year(canvas, time_game_started))
 
     canvas_height, canvas_width = canvas.getmaxyx()
     number_of_stars = random.randint(*RANGE_OF_STARS)
