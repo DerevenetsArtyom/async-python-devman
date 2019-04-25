@@ -119,26 +119,26 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 
     # Move obstacle down the screen until it reaches the end of the screen.
     # When reached - remove that obstacle from 'obstacles_list'.
-    while row < rows_number:
-        draw_frame(canvas, row, column, garbage_frame)
-        await asyncio.sleep(0)
-        draw_frame(canvas, row, column, garbage_frame, negative=True)
-        obstacle.row += speed
-        row += speed
+    try:
+        while row < rows_number:
+            draw_frame(canvas, row, column, garbage_frame)
+            await asyncio.sleep(0)
+            draw_frame(canvas, row, column, garbage_frame, negative=True)
+            obstacle.row += speed
+            row += speed
 
-        # Stop drawing garbage and obstacle frame if it was hit:
-        # remove that coroutines from corresponding lists and show explosion.
-        if obstacle in obstacles_in_last_collisions:
-            obstacles_list.remove(obstacle)
-            obstacles_in_last_collisions.remove(obstacle)
-            await explode(
-                canvas,
-                row + (rows_size // 2),
-                column + (columns_size // 2)
-            )
-            return
-
-    obstacles_list.remove(obstacle)
+            # Stop drawing garbage and obstacle frame if it was hit:
+            # remove that coroutines from corresponding lists and show explosion
+            if obstacle in obstacles_in_last_collisions:
+                obstacles_in_last_collisions.remove(obstacle)
+                await explode(
+                    canvas,
+                    row + (rows_size // 2),
+                    column + (columns_size // 2)
+                )
+                return
+    finally:
+        obstacles_list.remove(obstacle)
 
 
 async def fill_orbit_with_garbage(canvas, small_frame, large_frame):
