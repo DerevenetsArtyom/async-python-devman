@@ -1,49 +1,45 @@
+import glob
 import subprocess
 
+import asyncio
 
-# ## Start a process in Python:
-def first():
-    # You can start a process in Python using the Popen function call.
-    # The program below starts the unix program ‘cat’ and the second parameter
-    # is the argument. This is equivalent to ‘cat test.py’.
-    # You can start any program with any parameter.
+"""
+Shell command:
+    zip -r - * > test.zip
+Python code for left side:
+    archive = subprocess.call(['zip', '-r', '-'] + glob.glob('*'))
+"""
 
-    from subprocess import Popen, PIPE
-    process = Popen(['cat', 'README.md'], stdout=PIPE, stderr=PIPE)
+with open('archive1.zip', 'wb') as arc:
+    archive = subprocess.check_output(
+        ['zip', '-r', '-'] + glob.glob('async-download-service/')
+    )
+    arc.write(archive)
 
-    # The process.communicate() call reads input and output from the process.
-    # stdout is the process output.
-    # stderr will be written only if an error occurs.
-    # If you want to wait for the program to finish you can call Popen.wait().
-    stdout, stderr = process.communicate()
-    print(stdout)
+# Перепишите архивацию на asyncio
+# У модуля subprocess есть асинхронный аналог — asyncio subprocess.
+# Он позволяет разбить долгий процесс архивации на части и отправлять
+# клиенту архив порциями. Все будут в выигрыше:
+# клиент начнет скачивать файл сразу, не дожидаясь завершения архивации,
+# а вам не придется хранить в памяти сервера архив целиком.
 
+# Цель
+# Скрипт создаст файл c архивом archive.zip, не загружая его в память целиком.
+# Программа будет построена на asyncio.
 
-# ## Subprocess call():
-def second():
-    # Subprocess has a method call() which can be used to start a program.
-    # The parameter is list of which the first argument must be the program name
-    # The full definition is:
-    # subprocess.call(args, *, stdin=None, stdout=None, stderr=None, shell=False
-    # Run the command described by args.
-    # Wait for command to complete, then return the returncode attribute.
+# Проверьте, что архив archive.zip удастся распаковать.
 
-    # In the example below the full command would be “ls -l”
-    subprocess.call(["ls", "-l"])
+# Что понадобится
+# переписать код из туториала asyncio
+# удалите всё лишнее, оставьте одну асинхронную функцию archivate
+# переписать код архивации
+# asyncio subprocess — замена для subprocess
+# заменить переменную archive на archive_chunk
+# while True
 
-
-# ## Save process output (stdout)
-def third():
-    # We can get the output of a program and store it in a string directly
-    # using check_output. The method is defined as:
-    # subprocess.check_output(args, *, stdin=None, stderr=None,
-    #                         shell=False, universal_newlines=False)
-    # Run command with arguments and return its output as a byte string.
-
-    s = subprocess.check_output(["echo", "Hello World!"])
-    print("s = " + s.decode("utf-8"))
+# Советы
+# В отладочном коде останется синхронная операция записи в файл,
+# и её тоже можно сделать асинхронной с помощью aiofiles.
+# Это не обязательно, ведь в конечной программе этого кода не будет.
 
 
-first()
-second()
-third()
