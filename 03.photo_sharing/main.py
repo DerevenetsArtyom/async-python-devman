@@ -1,45 +1,42 @@
-import glob
-import subprocess
-
 import asyncio
 
 """
 Shell command:
     zip -r - * > test.zip
 Python code for left side:
+    import glob
+    import subprocess
+
     archive = subprocess.call(['zip', '-r', '-'] + glob.glob('*'))
+    archive = subprocess.check_output(['zip', '-r', '-'] + glob.glob('*'))
+    process = subprocess.Popen(['zip', '-r', '-'] + glob.glob('*'))
 """
 
-with open('archive1.zip', 'wb') as arc:
-    archive = subprocess.check_output(
-        ['zip', '-r', '-'] + glob.glob('async-download-service/')
+
+async def archivate(cmd):
+    proc = await asyncio.create_subprocess_shell(
+        cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
     )
-    arc.write(archive)
+    print('Started:', cmd, '(pid = ' + str(proc.pid) + ')')
 
-# Перепишите архивацию на asyncio
-# У модуля subprocess есть асинхронный аналог — asyncio subprocess.
-# Он позволяет разбить долгий процесс архивации на части и отправлять
-# клиенту архив порциями. Все будут в выигрыше:
-# клиент начнет скачивать файл сразу, не дожидаясь завершения архивации,
-# а вам не придется хранить в памяти сервера архив целиком.
+    full_archive = bytearray()
 
-# Цель
-# Скрипт создаст файл c архивом archive.zip, не загружая его в память целиком.
-# Программа будет построена на asyncio.
+    while True:
+        archive_chunk = await proc.stdout.readline()
+        if archive_chunk:
+            full_archive += archive_chunk
+        else:
+            print(f'[{cmd!r} exited with {proc.returncode}]')
+            break
 
-# Проверьте, что архив archive.zip удастся распаковать.
+    with open('archive.zip', 'wb') as arc:
+        arc.write(full_archive)
 
-# Что понадобится
-# переписать код из туториала asyncio
-# удалите всё лишнее, оставьте одну асинхронную функцию archivate
-# переписать код архивации
-# asyncio subprocess — замена для subprocess
-# заменить переменную archive на archive_chunk
-# while True
+command = 'zip -r - async-download-service/'
 
-# Советы
-# В отладочном коде останется синхронная операция записи в файл,
-# и её тоже можно сделать асинхронной с помощью aiofiles.
-# Это не обязательно, ведь в конечной программе этого кода не будет.
-
+loop = asyncio.get_event_loop()
+loop.run_until_complete(archivate(command))
+loop.close()
 
