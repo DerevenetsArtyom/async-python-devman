@@ -1,31 +1,51 @@
 import asyncio
-import datetime
 
 import aiofiles
 from aiohttp import web
 
 INTERVAL_SECS = 1
 
+"""
+https://www.programcreek.com/python/example/91858/aiohttp.web.StreamResponse
+https://gist.github.com/jbn/fc90e3ddbc5c60c698d07b3df30004c8
+"""
+
 
 async def uptime_handler(request):
-    response = web.StreamResponse()
+    # command = 'zip -r - test_photos/7kna/'
+    command = 'zip -r - README.md'
 
-    # Большинство браузеров не отрисовывают частично загруженный контент,
-    # только если это не HTML.
-    # Поэтому отправляем клиенту именно HTML, указываем это в Content-Type.
-    response.headers['Content-Type'] = 'text/html'
+    proc = await asyncio.create_subprocess_shell(
+        command,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    print('Started:', command, '(pid = ' + str(proc.pid) + ')')
+
+    response = web.StreamResponse(headers={
+        # Большинство браузеров не отрисовывают частично загруженный контент,
+        # только если это не HTML.
+        # Поэтому отправляем клиенту именно HTML, указываем это в Content-Type.
+        'Content-Type': 'text/html',
+
+        'Content-Disposition': 'attachment; filename="archive.zip"'
+    })
 
     # Отправляет клиенту HTTP заголовки
     await response.prepare(request)
 
     while True:
-        formatted_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        message = f'{formatted_date}<br>'  # <br> — HTML тег переноса строки
-
-        # Отправляет клиенту очередную порцию ответа
-        await response.write(message.encode('utf-8'))
+        archive_chunk = await proc.stdout.readline()
+        if archive_chunk:
+            print('archive_chunk', len(archive_chunk))
+            await response.write(archive_chunk)
+        else:
+            print(f'[{command!r} exited with {proc.returncode}]')
+            break
 
         await asyncio.sleep(INTERVAL_SECS)
+
+    return response
 
 
 async def archivate(request):
