@@ -1,10 +1,13 @@
 import asyncio
+import logging
 import os
 
 import aiofiles
 from aiohttp import web
 
 INTERVAL_SECS = 1
+
+logging.basicConfig(level=logging.DEBUG)
 
 """
 https://www.programcreek.com/python/example/91858/aiohttp.web.StreamResponse
@@ -19,7 +22,9 @@ async def archivate(request):
     path_to_photos = f'{base_dir}/{archive_hash}'
 
     if not os.path.exists(path_to_photos):
-        return web.HTTPNotFound(text='Архив не существует или был удален.')
+        logging.error('Attempt to request non existing archive')
+        return web.HTTPNotFound(
+            text='Archive does not exist or has been removed')
 
     command = f'zip -r - {path_to_photos}'
 
@@ -28,7 +33,8 @@ async def archivate(request):
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
-    print('Started:', command, '(pid = ' + str(proc.pid) + ')')
+    message = f'Started: {command} (pid = {str(proc.pid)})'
+    logging.debug(message)
 
     response = web.StreamResponse(headers={
         # Большинство браузеров не отрисовывают частично загруженный контент,
@@ -46,10 +52,11 @@ async def archivate(request):
     while True:
         archive_chunk = await proc.stdout.readline()
         if archive_chunk:
-            print('archive_chunk', len(archive_chunk))
+            logging.info('Sending archive chunk ...')
             await response.write(archive_chunk)
         else:
-            print(f'[{command!r} exited with {proc.returncode}]')
+            message = f'[{command!r} exited with {proc.returncode}]'
+            logging.info(message)
             break
 
         await asyncio.sleep(INTERVAL_SECS)
