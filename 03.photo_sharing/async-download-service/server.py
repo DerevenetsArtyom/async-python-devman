@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 import aiofiles
 from aiohttp import web
@@ -11,9 +12,16 @@ https://gist.github.com/jbn/fc90e3ddbc5c60c698d07b3df30004c8
 """
 
 
-async def uptime_handler(request):
-    # command = 'zip -r - test_photos/7kna/'
-    command = 'zip -r - README.md'
+async def archivate(request):
+    base_dir = 'test_photos'
+    archive_hash = request.match_info['archive_hash']
+
+    path_to_photos = f'{base_dir}/{archive_hash}'
+
+    if not os.path.exists(path_to_photos):
+        return web.HTTPNotFound(text='Архив не существует или был удален.')
+
+    command = f'zip -r - {path_to_photos}'
 
     proc = await asyncio.create_subprocess_shell(
         command,
@@ -27,6 +35,7 @@ async def uptime_handler(request):
         # только если это не HTML.
         # Поэтому отправляем клиенту именно HTML, указываем это в Content-Type.
         'Content-Type': 'text/html',
+        # TODO: application/zip???
 
         'Content-Disposition': 'attachment; filename="archive.zip"'
     })
@@ -48,10 +57,6 @@ async def uptime_handler(request):
     return response
 
 
-async def archivate(request):
-    raise NotImplementedError
-
-
 async def handle_index_page(request):
     async with aiofiles.open('index.html', mode='r') as index_file:
         index_contents = await index_file.read()
@@ -62,7 +67,6 @@ if __name__ == '__main__':
     app = web.Application()
     app.add_routes([
         web.get('/', handle_index_page),
-        # web.get('/archive/{archive_hash}/', archivate),
-        web.get('/archive/{archive_hash}/', uptime_handler),
+        web.get('/archive/{archive_hash}/', archivate),
     ])
     web.run_app(app)
