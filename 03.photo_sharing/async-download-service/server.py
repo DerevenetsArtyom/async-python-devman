@@ -71,6 +71,7 @@ async def archivate(request):
     finally:
         logging.info('Killing "zip" process')
         proc.kill()
+        response.force_close()
 
     return response
 
