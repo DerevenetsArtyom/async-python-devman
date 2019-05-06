@@ -53,29 +53,11 @@ async def archivate(request):
     # https://stackoverflow.com/questions/50781181/os-kill-vs-process-terminate-within-aiohttp
     # https://medium.com/@yeraydiazdiaz/asyncio-coroutine-patterns-errors-and-cancellation-3bb422e961ff
 
-    loop = asyncio.get_event_loop()
-    last_sent_time = loop.time()
-    print('last_sent_time', last_sent_time)
-
     try:
         while True:
-            current = loop.time()
-            diff = current - last_sent_time
-            print('diff', diff)
-
-            try:
-                archive_chunk = await asyncio.wait_for(
-                    proc.stdout.readline(), timeout=10
-                )
-            except asyncio.TimeoutError:
-                archive_chunk = None
-                print('timeout!')
-
             archive_chunk = await proc.stdout.readline()
             if archive_chunk:
                 logging.info('Sending archive chunk ...')
-                last_sent_time = current
-
                 await response.write(archive_chunk)
             else:
                 message = f'[{command!r} exited with {proc.returncode}]'
@@ -83,15 +65,12 @@ async def archivate(request):
                 break
 
             await asyncio.sleep(INTERVAL_SECS)
-    except (asyncio.TimeoutError, asyncio.CancelledError, ConnectionResetError) as e:
-        print('gggg')
-        # <class 'concurrent.futures._base.CancelledError'>
-        print(type(e))
-
-    except Exception as e:
-        print('here')
-        print(vars(e))
-        raise e
+    except asyncio.CancelledError:
+        logging.info('Seems like client was disconnected')
+        raise
+    finally:
+        logging.info('Killing "zip" process')
+        proc.kill()
 
     return response
 
