@@ -1,13 +1,10 @@
+import argparse
 import asyncio
 import logging
 import os
 
 import aiofiles
 from aiohttp import web
-
-INTERVAL_SECS = 1
-
-logging.basicConfig(level=logging.DEBUG)
 
 """
 https://www.programcreek.com/python/example/91858/aiohttp.web.StreamResponse
@@ -16,13 +13,11 @@ https://gist.github.com/jbn/fc90e3ddbc5c60c698d07b3df30004c8
 
 
 async def archivate(request):
-    base_dir = 'test_photos'
     archive_hash = request.match_info['archive_hash']
-
-    path_to_photos = f'{base_dir}/{archive_hash}'
+    path_to_photos = f'{PHOTOS_PATH}/{archive_hash}'
 
     if not os.path.exists(path_to_photos):
-        logging.error('Attempt to request non existing archive')
+        logging.debug('Attempt to request non existing archive')
         return web.HTTPNotFound(
             text='Archive does not exist or has been removed')
 
@@ -57,19 +52,20 @@ async def archivate(request):
         while True:
             archive_chunk = await proc.stdout.readline()
             if archive_chunk:
-                logging.info('Sending archive chunk ...')
+                if DELAY_BETWEEN_SENDING:
+                    await asyncio.sleep(DELAY_BETWEEN_SENDING)
+                logging.debug('Sending archive chunk ...')
                 await response.write(archive_chunk)
             else:
                 message = f'[{command!r} exited with {proc.returncode}]'
-                logging.info(message)
+                logging.debug(message)
                 break
 
-            await asyncio.sleep(INTERVAL_SECS)
     except asyncio.CancelledError:
-        logging.info('Seems like client was disconnected')
+        logging.debug('Seems like client was disconnected')
         raise
     finally:
-        logging.info('Killing "zip" process')
+        logging.debug('Killing "zip" process')
         proc.kill()
         response.force_close()
 
@@ -83,6 +79,21 @@ async def handle_index_page(request):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--path', type=str, help='Set directory for photos')
+    parser.add_argument('--debug', action='store_true', help='Set debug mode')
+    parser.add_argument('--delay', type=float,
+                        help='Set delay between sending chunks in seconds')
+
+    args = parser.parse_args()
+
+    if args.debug or os.getenv('DEBUG') == '1':
+        logging.basicConfig(level=logging.DEBUG)
+    PHOTOS_PATH = args.path or os.getenv('PHOTOS_PATH', 'test_photos')
+    DELAY_BETWEEN_SENDING = args.delay or float(
+        os.getenv('DELAY_BETWEEN_SENDING', '1')
+    )
+
     app = web.Application()
     app.add_routes([
         web.get('/', handle_index_page),
