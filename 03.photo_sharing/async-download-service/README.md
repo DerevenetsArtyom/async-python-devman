@@ -1,12 +1,14 @@
-# Микросервис для скачивания файлов
+# Microservice for downloading files
 
-Микросервис помогает работе основного сайта, сделанного на CMS и обслуживает
-запросы на скачивание архивов с файлами. Микросервис не умеет ничего, кроме упаковки файлов
-в архив. Закачиваются файлы на сервер через FTP или админку CMS.
+This microservice helps the work of the main site, made on the CMS, and serves requests for downloading archives with files.
+Microservice can not do anything except packing files into the archive.
+Files are uploaded to the server via FTP or CMS admin panel.
 
-Создание архива происходит на лету по запросу от пользователя. Архив не сохраняется на диске, вместо этого по мере упаковки он сразу отправляется пользователю на скачивание.
+Creating an archive occurs on the fly upon request from the user.
+The archive is not stored on the disk, instead, as it is packaged, it is immediately sent to the user for download.
 
-От неавторизованного доступа архив защищен хешом в адресе ссылки на скачивание, например: `http://host.ru/archive/3bea29ccabbbf64bdebcc055319c5745/`. Хеш задается названием каталога с файлами, выглядит структура каталога так:
+From unauthorized access, the archive is protected by a hash in the download link address, for example: `http://host.ru/archive/3bea29ccabbbf64bdebcc055319c5745/`. 
+The hash is given by the name of the file directory, the directory structure looks like this:
 
 ```
 - photos
@@ -20,35 +22,63 @@
 ```
 
 
-## Как установить
+## Installation
 
-Для работы микросервиса нужен Python версии не ниже 3.6.
-
-```bash
-pip install -r requirements.txt
-```
-
-## Как запустить
+For microservice to work, you need to install **Python 3.6+**, clone the project 
+and then install all dependencies:
 
 ```bash
-python server.py
+$ git clone https://github.com/DerevenetsArtyom/async-python-devman.git
+$ cd 03.photo_sharing/async-download-service/
+$ pip install -r requirements.txt
 ```
 
-Сервер запустится на порту 8080, чтобы проверить его работу перейдите в браузере на страницу [http://127.0.0.1:8080/](http://127.0.0.1:8080/).
-
-## Как развернуть на сервере
+## Usage
 
 ```bash
-python server.py
+$ cd 03.photo_sharing/async-download-service/
+$ python server.py -h
+
+usage: server.py [-h] [--path PATH] [--debug] [--delay DELAY]
+
+If an arg is specified in more than one place, then commandline values
+override environment variables which override defaults.
+
+optional arguments:
+  -h, --help     show this help message and exit
+  --path PATH    Set directory for photos
+  --debug        Set debug mode
+  --delay DELAY  Set delay between sending chunks in seconds
 ```
 
-После этого перенаправить на микросервис запросы, начинающиеся с `/arhive/`. Например:
+## How to launch
+
+```bash
+$ cd 03.photo_sharing/async-download-service/
+$ python server.py
+```
+
+The server will start on port 8080. To check its operation, you must open a browser and go to [http://0.0.0.0:8080/](http://0.0.0.0:8080/).
+
+## How to deploy to server
+
+```bash
+$ cd 03.photo_sharing/async-download-service/
+$ python server.py
+```
+
+After that, it is necessary to redirect requests to microservice that begin with `/arhive/`. For example:
 
 ```
 GET http://host.ru/archive/3bea29ccabbbf64bdebcc055319c5745/
 GET http://host.ru/archive/af1ad8c76fda2e48ea9aed2937e972ea/
 ```
 
-# Цели проекта
+## Project Goals
+The code is written for educational purposes - this is a lesson in the course on Python and web development on the site [Devman](https://dvmn.org).
 
-Код написан в учебных целях — это урок в курсе по Python и веб-разработке на сайте [Devman](https://dvmn.org).
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)   
