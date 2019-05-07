@@ -6,11 +6,6 @@ import os
 import aiofiles
 from aiohttp import web
 
-"""
-https://www.programcreek.com/python/example/91858/aiohttp.web.StreamResponse
-https://gist.github.com/jbn/fc90e3ddbc5c60c698d07b3df30004c8
-"""
-
 
 async def archivate(request):
     archive_hash = request.match_info['archive_hash']
@@ -36,17 +31,11 @@ async def archivate(request):
         # только если это не HTML.
         # Поэтому отправляем клиенту именно HTML, указываем это в Content-Type.
         'Content-Type': 'text/html',
-        # TODO: application/zip???
-
         'Content-Disposition': 'attachment; filename="archive.zip"'
     })
 
     # Отправляет клиенту HTTP заголовки
     await response.prepare(request)
-
-    # https://www.roguelynn.com/words/asyncio-we-did-it-wrong-pt-2/
-    # https://stackoverflow.com/questions/50781181/os-kill-vs-process-terminate-within-aiohttp
-    # https://medium.com/@yeraydiazdiaz/asyncio-coroutine-patterns-errors-and-cancellation-3bb422e961ff
 
     try:
         while True:
