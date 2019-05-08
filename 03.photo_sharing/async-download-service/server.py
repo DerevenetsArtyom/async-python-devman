@@ -2,14 +2,15 @@ import argparse
 import asyncio
 import logging
 import os
+from functools import partial
 
 import aiofiles
 from aiohttp import web
 
 
-async def archivate(request):
+async def archivate(photos_path, delay, request):
     archive_hash = request.match_info['archive_hash']
-    path_to_photos = f'{PHOTOS_PATH}/{archive_hash}'
+    path_to_photos = f'{photos_path}/{archive_hash}'
 
     if not os.path.exists(path_to_photos):
         logging.debug('Attempt to request non existing archive')
@@ -41,14 +42,16 @@ async def archivate(request):
         while True:
             archive_chunk = await proc.stdout.readline()
             if archive_chunk:
-                if DELAY_BETWEEN_SENDING:
-                    await asyncio.sleep(DELAY_BETWEEN_SENDING)
+                if delay:
+                    await asyncio.sleep(delay)
                 logging.debug('Sending archive chunk ...')
                 await response.write(archive_chunk)
             else:
                 message = f'[{command!r} exited with {proc.returncode}]'
                 logging.debug(message)
                 break
+
+            await asyncio.sleep(0.1)
 
     except asyncio.CancelledError:
         logging.debug('Seems like client was disconnected')
@@ -67,25 +70,30 @@ async def handle_index_page(request):
     return web.Response(text=index_contents, content_type='text/html')
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', type=str, help='Set directory for photos')
     parser.add_argument('--debug', action='store_true', help='Set debug mode')
     parser.add_argument('--delay', type=float,
                         help='Set delay between sending chunks in seconds')
-
     args = parser.parse_args()
 
     if args.debug or os.getenv('DEBUG') == '1':
         logging.basicConfig(level=logging.DEBUG)
-    PHOTOS_PATH = args.path or os.getenv('PHOTOS_PATH', 'test_photos')
-    DELAY_BETWEEN_SENDING = args.delay or float(
-        os.getenv('DELAY_BETWEEN_SENDING', '1')
-    )
+
+    photos_path = args.path or os.getenv('PHOTOS_PATH', 'test_photos')
+    delay = args.delay or float(os.getenv('DELAY', '0'))
 
     app = web.Application()
     app.add_routes([
         web.get('/', handle_index_page),
-        web.get('/archive/{archive_hash}/', archivate),
+        web.get(
+            '/archive/{archive_hash}/',
+            partial(archivate, photos_path, delay)
+        ),
     ])
     web.run_app(app)
+
+
+if __name__ == '__main__':
+    main()
