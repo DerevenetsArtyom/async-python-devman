@@ -23,3 +23,21 @@
      * improved movement mechanics of spaceship
      * calculating collisions of spaceship with obstacles
      * game becomes harder as time goes by
+* ## [3. I need your photos](03.photo_sharing/async-download-service/README.md)
+    Could you share some photos?
+    What happens when you click the Download button in Dropbox? 
+    How does he manage in one instant to compress gigabytes into the archive and start downloading to your computer? 
+    This task requires to write the code for the “Download” button, and learn everything from your own experience.
+    
+    Django? Flask? Or maybe aiohttp?
+    aiohttp server needs to be started. This is the most popular Python framework with asynchronous code support.
+    
+    New about old: HTTP
+    Did you know that the HTTP response does not have to be prepared entirely? 
+    This task requires to archive the files on the fly, in pieces, and immediately give these pieces to the client for download.
+    
+    Make a script that allows you to download all the photos from a landing page in one click.
+    
+    * launch the site
+    * archive files
+    * make the code asynchronous
