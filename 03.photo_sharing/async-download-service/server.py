@@ -9,6 +9,8 @@ from aiohttp import web
 
 
 async def archivate(photos_path, delay, request):
+    """Asynchronously archive directory on the fly and send it to client"""
+
     archive_hash = request.match_info['archive_hash']
     path_to_photos = f'{photos_path}/{archive_hash}'
 
@@ -28,37 +30,32 @@ async def archivate(photos_path, delay, request):
     logging.debug(message)
 
     response = web.StreamResponse(headers={
-        # Большинство браузеров не отрисовывают частично загруженный контент,
-        # только если это не HTML.
-        # Поэтому отправляем клиенту именно HTML, указываем это в Content-Type.
-        'Content-Type': 'text/html',
+        'Content-Type': 'application/zip',
         'Content-Disposition': 'attachment; filename="archive.zip"'
     })
-
-    # Отправляет клиенту HTTP заголовки
+    # Send HTTP headers to the client
     await response.prepare(request)
 
     try:
         while True:
+            if delay:
+                await asyncio.sleep(delay)
             archive_chunk = await proc.stdout.readline()
-            if archive_chunk:
-                if delay:
-                    await asyncio.sleep(delay)
-                logging.debug('Sending archive chunk ...')
-                await response.write(archive_chunk)
-            else:
+            if not archive_chunk:
                 message = f'[{command!r} exited with {proc.returncode}]'
                 logging.debug(message)
                 break
 
-            await asyncio.sleep(0.1)
+            logging.debug('Sending archive chunk ...')
+            await response.write(archive_chunk)
 
     except asyncio.CancelledError:
         logging.debug('Seems like client was disconnected')
+        message = f'Killing "zip" process (pid = {str(proc.pid)})'
+        proc.kill()
+        logging.debug(message)
         raise
     finally:
-        logging.debug('Killing "zip" process')
-        proc.kill()
         response.force_close()
 
     return response
