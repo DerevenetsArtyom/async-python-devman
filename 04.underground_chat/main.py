@@ -1,11 +1,12 @@
+import argparse
 import asyncio
 import datetime
+import os
 
 import aiofiles
 
 SERVER_HOST = 'minechat.dvmn.org'
-SERVER_PORT = 5000
-SERVER = (SERVER_HOST, SERVER_PORT)
+SERVER_READ_PORT = 5000
 
 
 # https://www.google.com/search?q=asyncio+tcp+handle+reconnection&oq=asyncio+tcp+handle+reconnection++&aqs=chrome..69i57.23573j0j1&sourceid=chrome&ie=UTF-8
@@ -14,11 +15,11 @@ SERVER = (SERVER_HOST, SERVER_PORT)
 # https://github.com/crossbario/autobahn-python/issues/295
 
 
-async def connect():
+async def connect(server):
     """Set up re-connection for client"""
     while True:
         try:
-            reader, writer = await asyncio.open_connection(*SERVER)
+            reader, writer = await asyncio.open_connection(*server)
             return reader, writer
         except (ConnectionRefusedError, ConnectionResetError) as e:
             print(e)
@@ -26,14 +27,14 @@ async def connect():
             await asyncio.sleep(5)
 
 
-async def tcp_client():
+async def tcp_client(server, history):
     while True:
         try:
             print('Before connection!')
-            reader, writer = await connect()
+            reader, writer = await connect(server)
             print('Connected!')
 
-            async with aiofiles.open('log.txt', 'a') as file:
+            async with aiofiles.open(history, 'a') as file:
                 while True:
                     data = await reader.readline()
                     message = data.decode()
@@ -48,6 +49,23 @@ async def tcp_client():
             continue
 
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(tcp_client())
-loop.close()
+def main():
+    parser = argparse.ArgumentParser()
+    # TODO: add help strings
+    parser.add_argument('--host', type=str, help='')
+    parser.add_argument('--port', type=str, help='')
+    parser.add_argument('--history', type=str, help='')
+    args = parser.parse_args()
+
+    host = args.host or os.getenv('CHAT_HOST', SERVER_HOST)
+    port = args.port or os.getenv('CHAT_PORT', SERVER_READ_PORT)
+    history = args.history or os.getenv('HISTORY', 'minechat-history.txt')
+    server = (host, port)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(tcp_client(server, history))
+    loop.close()
+
+
+if __name__ == '__main__':
+    main()
