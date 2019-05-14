@@ -6,12 +6,6 @@ SERVER_HOST = 'minechat.dvmn.org'
 SERVER_WRITE_PORT = 5050
 TOKEN = '5210a154-74ca-11e9-9d4f-0242ac110002'
 
-# Hello %username%! Enter your personal hash or leave it empty to create new account.
-# 5210a154-74ca-11e9-9d4f-0242ac110002
-# {"nickname": "Boring karkadee", "account_hash": "5210a154-74ca-11e9-9d4f-0242ac110002"}
-# Welcome to chat! Post your message below. End it with an empty line.
-# hollee
-
 
 async def connect(server):
     """Set up re-connection for client"""
@@ -27,7 +21,8 @@ async def connect(server):
 
 async def tcp_client(server, history):
     reader, writer = await connect(server)
-    data = await reader.readline()
+
+    data = await reader.readline()  # 'Hello %username%!
     print(f'Received: {data.decode()!r}')
 
     message = TOKEN + '\n'
@@ -35,16 +30,20 @@ async def tcp_client(server, history):
     writer.write(message.encode())
     await writer.drain()
 
-    data = await reader.readline()
-
-    print(data.decode())
+    data = await reader.readline()  # {"nickname": ... , "account_hash": ...}
     print(f'Received: {data.decode()!r}')
 
-    message = 'Hello from Python'
+    data = await reader.readline()  # Welcome to chat! Post your message below.
+    print(f'Received: {data.decode()!r}')
+
+    message = 'Hello from Python\n\n'
 
     print(f'Send: {message!r}')
     writer.write(message.encode())
     await writer.drain()
+
+    data = await reader.readline()  # Message send. Write more
+    print(f'Received: {data.decode()!r}')
 
     print('Close the connection')
     writer.close()
