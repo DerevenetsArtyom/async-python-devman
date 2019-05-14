@@ -20,27 +20,28 @@ async def connect(server):
             await asyncio.sleep(5)
 
 
-async def tcp_client(server, history, token):
-    reader, writer = await connect(server)
-
-    data = await reader.readline()  # 'Hello %username%!
-    print(f'Received: {data.decode()!r}')
+async def authorise(reader, writer, token):
+    await reader.readline()  # 'Hello %username%!
 
     message = token + '\n'
-    print(f'Send: {message!r}')
     writer.write(message.encode())
     await writer.drain()
 
     data = await reader.readline()  # {"nickname": ... , "account_hash": ...}
-    print(f'Received: {data.decode()!r}')
 
     response = json.loads(data.decode())
     if not response:
         print("Неизвестный токен. Проверьте его или зарегистрируйте заново")
         return
 
-    data = await reader.readline()  # Welcome to chat! Post your message below.
+    data = await reader.readline()  # Welcome to chat! Post your message below
     print(f'Received: {data.decode()!r}')
+
+
+async def tcp_client(server, history, token):
+    reader, writer = await connect(server)
+
+    await authorise(reader, writer, token)
 
     message = 'Hello from Python\n\n'
 
