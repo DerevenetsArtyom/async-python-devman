@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import os
+import json
 
 SERVER_HOST = 'minechat.dvmn.org'
 SERVER_WRITE_PORT = 5050
@@ -19,19 +20,24 @@ async def connect(server):
             await asyncio.sleep(5)
 
 
-async def tcp_client(server, history):
+async def tcp_client(server, history, token):
     reader, writer = await connect(server)
 
     data = await reader.readline()  # 'Hello %username%!
     print(f'Received: {data.decode()!r}')
 
-    message = TOKEN + '\n'
+    message = token + '\n'
     print(f'Send: {message!r}')
     writer.write(message.encode())
     await writer.drain()
 
     data = await reader.readline()  # {"nickname": ... , "account_hash": ...}
     print(f'Received: {data.decode()!r}')
+
+    response = json.loads(data.decode())
+    if not response:
+        print("Неизвестный токен. Проверьте его или зарегистрируйте заново")
+        return
 
     data = await reader.readline()  # Welcome to chat! Post your message below.
     print(f'Received: {data.decode()!r}')
@@ -55,15 +61,18 @@ def main():
     parser.add_argument('--host', type=str, help='')
     parser.add_argument('--port', type=str, help='')
     parser.add_argument('--history', type=str, help='')
+    parser.add_argument('--token', type=str, help='')
     args = parser.parse_args()
 
     host = args.host or os.getenv('CHAT_HOST', SERVER_HOST)
     port = args.port or os.getenv('CHAT_PORT', SERVER_WRITE_PORT)
+    token = args.token or os.getenv('TOKEN', TOKEN)
     history = args.history or os.getenv('HISTORY', 'minechat-history.txt')
     server = (host, port)
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(tcp_client(server, history))
+    loop.set_debug(False)
+    loop.run_until_complete(tcp_client(server, history, token))
     loop.close()
 
 
