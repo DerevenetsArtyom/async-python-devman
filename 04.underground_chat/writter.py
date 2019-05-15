@@ -1,11 +1,13 @@
 import argparse
 import asyncio
-import os
 import json
+import logging
+import os
 
 SERVER_HOST = 'minechat.dvmn.org'
 SERVER_WRITE_PORT = 5050
 TOKEN = '5210a154-74ca-11e9-9d4f-0242ac110002'
+
 
 # https://stackoverflow.com/questions/53779956/why-should-asyncio-streamwriter-drain-be-explicitly-called
 # http://qaru.site/questions/16757914/why-should-asynciostreamwriterdrain-be-explicitly-called
@@ -53,6 +55,11 @@ async def register(reader, writer, username):
 
 
 async def authorise(reader, writer, token):
+    """
+    Authorize a user and call a submit_message() if user exists
+    or call register().
+    """
+
     await reader.readline()  # 'Hello %username%!
 
     message = token + '\n'
@@ -69,6 +76,19 @@ async def authorise(reader, writer, token):
     print(f'Received: {data.decode()!r}')
 
 
+def sanitize(message):
+    return message.replace('\n', '').replace('\r', '')
+
+
+async def submit_message(reader, writer, message):
+    message = '{}\n\n'.format(sanitize(message)).encode()
+    writer.write(message)
+    logging.info('Sent message: {}'.format(message))
+
+    data = await reader.readline()  # Message send. Write more
+    logging.info('Received: {}'.format(data))
+
+
 async def tcp_client(server, history, token, username):
     reader, writer = await connect(server)
 
@@ -76,13 +96,9 @@ async def tcp_client(server, history, token, username):
 
     await authorise(reader, writer, token)
 
-    message = 'Hello from Python\n\n'
+    message = 'Hello from Python'
 
-    print(f'Send: {message!r}')
-    writer.write(message.encode())
-
-    data = await reader.readline()  # Message send. Write more
-    print(f'Received: {data.decode()!r}')
+    await submit_message(reader, writer, message)
 
     print('Close the connection')
     writer.close()
@@ -104,6 +120,12 @@ def main():
     username = args.username or os.getenv('USERNAME', 'username')
     history = args.history or os.getenv('HISTORY', 'minechat-history.txt')
     server = (host, port)
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s: %(message)s',
+        datefmt='%H:%M:%S',
+    )
 
     loop = asyncio.get_event_loop()
     loop.set_debug(False)
