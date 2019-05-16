@@ -37,35 +37,19 @@ async def tcp_client(server, history):
             async with aiofiles.open(history, 'a') as file:
                 while True:
                     data = await reader.readline()
-                    message = data.decode()
+                    await log_to_file(data.decode(), file)
 
-                    now = datetime.datetime.now()
-                    timestamp = now.strftime("%Y.%m.%d %H:%M")
-                    to_file = f'[{timestamp}] {message}'
-                    print(f'[{timestamp}] Received: {message!r}')
-                    await file.write(to_file)
         except Exception as e:
             print(e)
             continue
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    # TODO: add help strings
-    parser.add_argument('--host', type=str, help='')
-    parser.add_argument('--port', type=str, help='')
-    parser.add_argument('--history', type=str, help='')
-    args = parser.parse_args()
+async def log_to_file(message, file):
+    now = datetime.datetime.now()
+    timestamp = now.strftime("%Y.%m.%d %H:%M")
 
-    host = args.host or os.getenv('CHAT_HOST', SERVER_HOST)
-    port = args.port or os.getenv('CHAT_PORT', SERVER_READ_PORT)
-    history = args.history or os.getenv('HISTORY', 'minechat-history.txt')
-    server = (host, port)
+    log = f'[{timestamp}] {message}'
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(tcp_client(server, history))
-    loop.close()
-
-
-if __name__ == '__main__':
-    main()
+    print(log)
+    await file.write(log)
+    await file.fsync()
