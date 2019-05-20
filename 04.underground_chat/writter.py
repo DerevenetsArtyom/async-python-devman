@@ -4,9 +4,14 @@ import json
 import logging
 import os
 
+from utils import connect, sanitize
+
 SERVER_HOST = 'minechat.dvmn.org'
 SERVER_WRITE_PORT = 5050
 TOKEN = '5210a154-74ca-11e9-9d4f-0242ac110002'
+
+# TODO: 3.Создайте защиту от обрыва соединения
+# TODO: 4.Сохраните историю переписки в файл
 
 
 # https://stackoverflow.com/questions/53779956/why-should-asyncio-streamwriter-drain-be-explicitly-called
@@ -16,30 +21,11 @@ TOKEN = '5210a154-74ca-11e9-9d4f-0242ac110002'
 # https://pymotw.com/3/asyncio/io_coroutine.html
 
 
-async def connect(server):
-    """Set up re-connection for client"""
-    while True:
-        try:
-            reader, writer = await asyncio.open_connection(*server)
-            return reader, writer
-        except (ConnectionRefusedError, ConnectionResetError) as e:
-            print(e)
-            print("Server not up retrying in 5 seconds...")
-            await asyncio.sleep(5)
-
-
-# Советы
-# При регистрации нового пользователя не обязательно отправлять
-# приветственное сообщение.
-# Можно сразу отключиться, чтобы затем залогиниться по токену и
-# отправить своё первое сообщение.
-# Действий больше, но зато программа станет проще и надежнее.
-
-
 async def register(reader, writer, username):
     await reader.readline()  # 'Hello %username%!
 
     message = '\n'
+    # TODO: add sanitize
     writer.write(message.encode())
     await reader.readline()  # Enter preferred nickname below:
 
@@ -51,10 +37,21 @@ async def register(reader, writer, username):
     response = json.loads(data.decode())
     os.environ["TOKEN"] = response['account_hash']
 
+    # logging.info('Username "{}" registered with token {}.'.format(
+    #     sanitize(username),
+    #     token
+    #     ))
+
     await reader.readline()  # Welcome to chat! Post your message below.
 
 
 async def authorise(reader, writer, token):
+    # При регистрации нового пользователя не обязательно отправлять
+    # приветственное сообщение.
+    # Можно сразу отключиться, чтобы затем залогиниться по токену и
+    # отправить своё первое сообщение.
+    # Действий больше, но зато программа станет проще и надежнее.
+
     """
     Authorize a user and call a submit_message() if user exists
     or call register().
@@ -74,10 +71,6 @@ async def authorise(reader, writer, token):
 
     data = await reader.readline()  # Welcome to chat! Post your message below
     print(f'Received: {data.decode()!r}')
-
-
-def sanitize(message):
-    return message.replace('\n', '').replace('\r', '')
 
 
 async def submit_message(reader, writer, message):
@@ -104,32 +97,65 @@ async def tcp_client(server, history, token, username):
     writer.close()
 
 
-def main():
+def get_arguments(host, port, token, username, history, message):
     parser = argparse.ArgumentParser()
     # TODO: add help strings
     parser.add_argument('--host', type=str, help='')
     parser.add_argument('--port', type=str, help='')
     parser.add_argument('--history', type=str, help='')
-    parser.add_argument('--token', type=str, help='')
-    parser.add_argument('--username', type=str, help='')
+    parser.add_argument('--message', type=str, help='')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--token', type=str, help='')
+    group.add_argument('--username', type=str, help='')
+
     args = parser.parse_args()
+    if args.username:
+        token = None
+    if args.token:
+        username = None
 
-    host = args.host or os.getenv('CHAT_HOST', SERVER_HOST)
-    port = args.port or os.getenv('CHAT_PORT', SERVER_WRITE_PORT)
-    token = args.token or os.getenv('TOKEN', TOKEN)
-    username = args.username or os.getenv('USERNAME', 'username')
-    history = args.history or os.getenv('HISTORY', 'minechat-history.txt')
-    server = (host, port)
+    parser.set_defaults(
+        host=host,
+        port=port,
+        token=token,
+        username=username,
+        history=history,
+        message=message
+    )
+    # args = parser.parse_args()
+    return {
+        'server': (host, port),
+        'token': token,
+        'username': username,
+        'history': history,
+        'message': message
+    }
 
+    # if token only verbose -> authorize
+    # if username only verbose -> register
+
+
+def main():
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s %(levelname)s: %(message)s',
         datefmt='%H:%M:%S',
     )
 
+    args = get_arguments(
+        os.getenv('CHAT_HOST', SERVER_HOST),
+        os.getenv('SERVER_WRITE_PORT', SERVER_WRITE_PORT),
+        os.getenv('TOKEN'),
+        os.getenv('USERNAME'),
+        os.getenv('HISTORY', 'minechat-history.txt'),
+        os.getenv('MESSAGE')
+    )
+
+    print('args', args)
     loop = asyncio.get_event_loop()
     loop.set_debug(False)
-    loop.run_until_complete(tcp_client(server, history, token, username))
+    loop.run_until_complete(tcp_client(**args))
     loop.close()
 
 
