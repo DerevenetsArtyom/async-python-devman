@@ -9,6 +9,8 @@ from utils import connect, sanitize
 SERVER_HOST = 'minechat.dvmn.org'
 SERVER_WRITE_PORT = 5050
 TOKEN = '5210a154-74ca-11e9-9d4f-0242ac110002'
+MESSAGE = 'Hello from Python'
+HISTORY = 'minechat-history.txt'
 
 # TODO: 3.Создайте защиту от обрыва соединения
 # TODO: 4.Сохраните историю переписки в файл
@@ -82,19 +84,22 @@ async def submit_message(reader, writer, message):
     logging.info('Received: {}'.format(data))
 
 
-async def tcp_client(server, history, token, username):
-    reader, writer = await connect(server)
+async def dive_into_chatting(server, history, token, username, message):
+    # if token only verbose -> authorize
+    # if username only verbose -> register
 
-    await register(reader, writer, username)
+    try:
+        reader, writer = await connect(server)
 
-    await authorise(reader, writer, token)
+        await register(reader, writer, username)
 
-    message = 'Hello from Python'
+        await authorise(reader, writer, token)
 
-    await submit_message(reader, writer, message)
+        await submit_message(reader, writer, message)
 
-    print('Close the connection')
-    writer.close()
+    finally:
+        print('Close the connection')
+        writer.close()
 
 
 def get_arguments(host, port, token, username, history, message):
@@ -132,9 +137,6 @@ def get_arguments(host, port, token, username, history, message):
         'message': message
     }
 
-    # if token only verbose -> authorize
-    # if username only verbose -> register
-
 
 def main():
     logging.basicConfig(
@@ -146,16 +148,16 @@ def main():
     args = get_arguments(
         os.getenv('CHAT_HOST', SERVER_HOST),
         os.getenv('SERVER_WRITE_PORT', SERVER_WRITE_PORT),
-        os.getenv('TOKEN'),
+        os.getenv('TOKEN', TOKEN),
         os.getenv('USERNAME'),
-        os.getenv('HISTORY', 'minechat-history.txt'),
-        os.getenv('MESSAGE')
+        os.getenv('HISTORY', HISTORY),
+        os.getenv('MESSAGE', MESSAGE)
     )
 
     print('args', args)
     loop = asyncio.get_event_loop()
     loop.set_debug(False)
-    loop.run_until_complete(tcp_client(**args))
+    loop.run_until_complete(dive_into_chatting(**args))
     loop.close()
 
 
