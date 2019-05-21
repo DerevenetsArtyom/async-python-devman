@@ -23,9 +23,16 @@ HISTORY = 'minechat-history.txt'
 # https://pymotw.com/3/asyncio/io_coroutine.html
 
 
-async def register(reader, writer, username):
-    await reader.readline()  # 'Hello %username%!
+async def submit_message(reader, writer, message):
+    message = '{}\n\n'.format(sanitize(message)).encode()
+    writer.write(message)
+    logging.info('Sent message: {}'.format(message))
 
+    data = await reader.readline()  # Message send. Write more
+    logging.info('Received: {}'.format(data))
+
+
+async def register(reader, writer, username):
     message = '\n'
     # TODO: add sanitize
     writer.write(message.encode())
@@ -75,31 +82,21 @@ async def authorise(reader, writer, token):
     print(f'Received: {data.decode()!r}')
 
 
-async def submit_message(reader, writer, message):
-    message = '{}\n\n'.format(sanitize(message)).encode()
-    writer.write(message)
-    logging.info('Sent message: {}'.format(message))
+async def dive_into_chatting(host, port, history, token, username, message):
+    reader, writer = await connect((host, port))
 
-    data = await reader.readline()  # Message send. Write more
-    logging.info('Received: {}'.format(data))
+    await reader.readline()  # 'Hello %username%!
 
-
-async def dive_into_chatting(server, history, token, username, message):
-    # if token only verbose -> authorize
-    # if username only verbose -> register
-
-    try:
-        reader, writer = await connect(server)
-
-        await register(reader, writer, username)
-
+    if token:
         await authorise(reader, writer, token)
-
+        await submit_message(reader, writer, message)
+    elif username:
+        logging.info('Go to register with username {}.'.format(username))
+        await register(reader, writer, username)
         await submit_message(reader, writer, message)
 
-    finally:
-        print('Close the connection')
-        writer.close()
+    print('Close the connection')
+    writer.close()
 
 
 def get_arguments(host, port, token, username, history, message):
@@ -128,14 +125,8 @@ def get_arguments(host, port, token, username, history, message):
         history=history,
         message=message
     )
-    # args = parser.parse_args()
-    return {
-        'server': (host, port),
-        'token': token,
-        'username': username,
-        'history': history,
-        'message': message
-    }
+    args = parser.parse_args()
+    return vars(args)
 
 
 def main():
@@ -154,7 +145,6 @@ def main():
         os.getenv('MESSAGE', MESSAGE)
     )
 
-    print('args', args)
     loop = asyncio.get_event_loop()
     loop.set_debug(False)
     loop.run_until_complete(dive_into_chatting(**args))
