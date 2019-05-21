@@ -33,12 +33,12 @@ async def submit_message(reader, writer, message):
 
 
 async def register(reader, writer, username):
-    message = '\n'
-    # TODO: add sanitize
-    writer.write(message.encode())
+    logging.info('Register: Try username {}.'.format(username))
+
+    writer.write('\n'.encode())
     await reader.readline()  # Enter preferred nickname below:
 
-    message = username + '\n'
+    message = '{}\n'.format(sanitize(username))
     writer.write(message.encode())
 
     data = await reader.readline()  # {"nickname": ... , "account_hash": ...}
@@ -46,10 +46,10 @@ async def register(reader, writer, username):
     response = json.loads(data.decode())
     os.environ["TOKEN"] = response['account_hash']
 
-    # logging.info('Username "{}" registered with token {}.'.format(
-    #     sanitize(username),
-    #     token
-    #     ))
+    logging.info('Register: Username "{}" registered with token {}'.format(
+        sanitize(username),
+        response['account_hash']
+    ))
 
     await reader.readline()  # Welcome to chat! Post your message below.
 
@@ -91,7 +91,6 @@ async def dive_into_chatting(host, port, history, token, username, message):
         await authorise(reader, writer, token)
         await submit_message(reader, writer, message)
     elif username:
-        logging.info('Go to register with username {}.'.format(username))
         await register(reader, writer, username)
         await submit_message(reader, writer, message)
 
@@ -132,7 +131,7 @@ def get_arguments(host, port, token, username, history, message):
 def main():
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s %(levelname)s: %(message)s',
+        format='%(asctime)s: %(message)s',
         datefmt='%H:%M:%S',
     )
 
