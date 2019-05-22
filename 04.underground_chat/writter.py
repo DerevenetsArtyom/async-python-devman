@@ -22,18 +22,18 @@ HISTORY = 'minechat-history.txt'
 # https://medium.com/@pgjones/an-asyncio-socket-tutorial-5e6f3308b8b0
 # https://pymotw.com/3/asyncio/io_coroutine.html
 
-
+# XXX: ready
 async def submit_message(reader, writer, message):
-    message = '{}\n\n'.format(sanitize(message)).encode()
-    writer.write(message)
-    logging.info('Sent message: {}'.format(message))
+    message = '{}\n\n'.format(sanitize(message))
+    writer.write(message.encode())
+    logging.info('Sent message: {}'.format(sanitize(message)))
 
     data = await reader.readline()  # Message send. Write more
-    logging.info('Received: {}'.format(data))
+    logging.info('Received: {}'.format(data.decode()))
 
 
 async def register(reader, writer, username):
-    logging.info('Register: Try username {}.'.format(username))
+    logging.info('Register: Try username {}'.format(username))
 
     writer.write('\n'.encode())
     await reader.readline()  # Enter preferred nickname below:
@@ -55,19 +55,6 @@ async def register(reader, writer, username):
 
 
 async def authorise(reader, writer, token):
-    # При регистрации нового пользователя не обязательно отправлять
-    # приветственное сообщение.
-    # Можно сразу отключиться, чтобы затем залогиниться по токену и
-    # отправить своё первое сообщение.
-    # Действий больше, но зато программа станет проще и надежнее.
-
-    """
-    Authorize a user and call a submit_message() if user exists
-    or call register().
-    """
-
-    await reader.readline()  # 'Hello %username%!
-
     message = token + '\n'
     writer.write(message.encode())
 
@@ -75,11 +62,13 @@ async def authorise(reader, writer, token):
 
     response = json.loads(data.decode())
     if not response:
-        print("Неизвестный токен. Проверьте его или зарегистрируйте заново")
-        return
+        logging.info("Invalid token: {}".format(token))
+        print("Invalid token. Check it or register again")
+        return False
 
     data = await reader.readline()  # Welcome to chat! Post your message below
-    print(f'Received: {data.decode()!r}')
+    logging.info('Received: {}'.format(data.decode()))
+    return True
 
 
 async def dive_into_chatting(host, port, history, token, username, message):
@@ -88,13 +77,17 @@ async def dive_into_chatting(host, port, history, token, username, message):
     await reader.readline()  # 'Hello %username%!
 
     if token:
-        await authorise(reader, writer, token)
-        await submit_message(reader, writer, message)
+        token_is_valid = await authorise(reader, writer, token)
+        if token_is_valid:
+            # Override token in env to be able to send messages
+            # without explicit token for next requests
+            os.environ["TOKEN"] = token
+            await submit_message(reader, writer, message)
     elif username:
         await register(reader, writer, username)
         await submit_message(reader, writer, message)
 
-    print('Close the connection')
+    logging.info('Close the connection')
     writer.close()
 
 
