@@ -10,10 +10,6 @@ SERVER_HOST = 'minechat.dvmn.org'
 SERVER_WRITE_PORT = 5050
 TOKEN = '5210a154-74ca-11e9-9d4f-0242ac110002'
 MESSAGE = 'Hello from Python'
-HISTORY = 'minechat-history.txt'
-
-# TODO: 3.Создайте защиту от обрыва соединения
-# TODO: 4.Сохраните историю переписки в файл
 
 
 # https://stackoverflow.com/questions/53779956/why-should-asyncio-streamwriter-drain-be-explicitly-called
@@ -91,12 +87,11 @@ async def dive_into_chatting(host, port, history, token, username, message):
     writer.close()
 
 
-def get_arguments(host, port, token, username, history, message):
+def get_arguments(host, port, token, username, message):
     parser = argparse.ArgumentParser()
     # TODO: add help strings
     parser.add_argument('--host', type=str, help='')
     parser.add_argument('--port', type=str, help='')
-    parser.add_argument('--history', type=str, help='')
     parser.add_argument('--message', type=str, help='')
 
     group = parser.add_mutually_exclusive_group()
@@ -114,7 +109,6 @@ def get_arguments(host, port, token, username, history, message):
         port=port,
         token=token,
         username=username,
-        history=history,
         message=message
     )
     args = parser.parse_args()
@@ -133,7 +127,6 @@ def main():
         os.getenv('SERVER_WRITE_PORT', SERVER_WRITE_PORT),
         os.getenv('TOKEN', TOKEN),
         os.getenv('USERNAME'),
-        os.getenv('HISTORY', HISTORY),
         os.getenv('MESSAGE', MESSAGE)
     )
 
