@@ -8,13 +8,6 @@ from utils import connect, sanitize
 from constants import SERVER_WRITE_PORT, SERVER_HOST, TOKEN
 
 
-# https://stackoverflow.com/questions/53779956/why-should-asyncio-streamwriter-drain-be-explicitly-called
-# http://qaru.site/questions/16757914/why-should-asynciostreamwriterdrain-be-explicitly-called
-
-# https://medium.com/@pgjones/an-asyncio-socket-tutorial-5e6f3308b8b0
-# https://pymotw.com/3/asyncio/io_coroutine.html
-
-# XXX: ready
 async def submit_message(reader, writer, message):
     message = '{}\n\n'.format(sanitize(message))
     writer.write(message.encode())
@@ -36,11 +29,11 @@ async def register(reader, writer, username):
     data = await reader.readline()  # {"nickname": ... , "account_hash": ...}
 
     response = json.loads(data.decode())
-    os.environ["TOKEN"] = response['account_hash']
+    os.environ['TOKEN'] = response['account_hash']
 
     logging.info('Register: Username "{}" registered with token {}'.format(
         sanitize(username),
-        response['account_hash']
+        os.environ['TOKEN']
     ))
 
     await reader.readline()  # Welcome to chat! Post your message below.
@@ -63,7 +56,7 @@ async def authorise(reader, writer, token):
     return True
 
 
-async def dive_into_chatting(host, port, history, token, username, message):
+async def dive_into_chatting(host, port, token, username, message):
     reader, writer = await connect((host, port))
 
     await reader.readline()  # 'Hello %username%!
@@ -85,14 +78,13 @@ async def dive_into_chatting(host, port, history, token, username, message):
 
 def get_arguments(host, port, token, username, message):
     parser = argparse.ArgumentParser()
-    # TODO: add help strings
-    parser.add_argument('--host', type=str, help='')
-    parser.add_argument('--port', type=str, help='')
-    parser.add_argument('--message', type=str, help='')
+    parser.add_argument('--host', type=str, help='Host to connect')
+    parser.add_argument('--port', type=str, help='Port to connect')
+    parser.add_argument('--message', type=str, help='Message')
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--token', type=str, help='')
-    group.add_argument('--username', type=str, help='')
+    group.add_argument('--token', type=str, help='Token')
+    group.add_argument('--username', type=str, help='Username')
 
     args = parser.parse_args()
     if args.username:
