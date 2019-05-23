@@ -5,11 +5,7 @@ import logging
 import os
 
 from utils import connect, sanitize
-
-SERVER_HOST = 'minechat.dvmn.org'
-SERVER_WRITE_PORT = 5050
-TOKEN = '5210a154-74ca-11e9-9d4f-0242ac110002'
-MESSAGE = 'Hello from Python'
+from constants import SERVER_WRITE_PORT, SERVER_HOST, TOKEN
 
 
 # https://stackoverflow.com/questions/53779956/why-should-asyncio-streamwriter-drain-be-explicitly-called
@@ -127,7 +123,7 @@ def main():
         os.getenv('SERVER_WRITE_PORT', SERVER_WRITE_PORT),
         os.getenv('TOKEN', TOKEN),
         os.getenv('USERNAME'),
-        os.getenv('MESSAGE', MESSAGE)
+        os.getenv('MESSAGE', 'Hello from Python')
     )
 
     loop = asyncio.get_event_loop()

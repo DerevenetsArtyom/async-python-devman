@@ -6,9 +6,7 @@ import logging
 
 import aiofiles
 
-SERVER_HOST = 'minechat.dvmn.org'
-SERVER_READ_PORT = 5000
-HISTORY = 'minechat-history.txt'
+from constants import SERVER_READ_PORT, SERVER_HOST, HISTORY
 
 # python3 listen-minechat.py
 #   --host 192.168.0.1
