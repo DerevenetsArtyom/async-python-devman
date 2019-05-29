@@ -3,9 +3,10 @@ import asyncio
 import json
 import logging
 import os
+from dotenv import load_dotenv
 
 from utils import connect, sanitize
-from constants import SERVER_WRITE_PORT, SERVER_HOST, TOKEN
+from constants import SERVER_WRITE_PORT, SERVER_HOST
 
 
 async def submit_message(reader, writer, message):
@@ -110,10 +111,11 @@ def main():
         datefmt='%H:%M:%S',
     )
 
+    load_dotenv()
     args = get_arguments(
         os.getenv('CHAT_HOST', SERVER_HOST),
         os.getenv('SERVER_WRITE_PORT', SERVER_WRITE_PORT),
-        os.getenv('TOKEN', TOKEN),
+        os.getenv('TOKEN'),
         os.getenv('USERNAME'),
         os.getenv('MESSAGE', 'Hello from Python')
     )

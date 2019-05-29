@@ -5,6 +5,7 @@ import os
 import logging
 
 import aiofiles
+from dotenv import load_dotenv
 
 from constants import SERVER_READ_PORT, SERVER_HOST, HISTORY
 
@@ -71,7 +72,7 @@ def main():
         format='%(asctime)s: %(message)s',
         datefmt='%H:%M:%S',
     )
-
+    load_dotenv()
     args = get_arguments(
         os.getenv('CHAT_HOST', SERVER_HOST),
         os.getenv('SERVER_READ_PORT', SERVER_READ_PORT),

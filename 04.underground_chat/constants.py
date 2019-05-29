@@ -2,4 +2,3 @@ SERVER_HOST = 'minechat.dvmn.org'
 SERVER_WRITE_PORT = 5050
 SERVER_READ_PORT = 5000
 HISTORY = 'minechat-history.txt'
-TOKEN = '5210a154-74ca-11e9-9d4f-0242ac110002'
