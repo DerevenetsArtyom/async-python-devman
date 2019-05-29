@@ -14,7 +14,7 @@ async def submit_message(reader, writer, message):
     writer.write(message.encode())
     logging.info('Sent message: {}'.format(sanitize(message)))
 
-    data = await reader.readline()  # Message send. Write more
+    data = await reader.readline()
     logging.info('Received: {}'.format(data.decode()))
 
 
@@ -22,12 +22,12 @@ async def register(reader, writer, username):
     logging.info('Register: Try username {}'.format(username))
 
     writer.write('\n'.encode())
-    await reader.readline()  # Enter preferred nickname below:
+    await reader.readline()
 
     message = '{}\n'.format(sanitize(username))
     writer.write(message.encode())
 
-    data = await reader.readline()  # {"nickname": ... , "account_hash": ...}
+    data = await reader.readline()
 
     response = json.loads(data.decode())
     os.environ['TOKEN'] = response['account_hash']
@@ -37,14 +37,14 @@ async def register(reader, writer, username):
         os.environ['TOKEN']
     ))
 
-    await reader.readline()  # Welcome to chat! Post your message below.
+    await reader.readline()
 
 
 async def authorise(reader, writer, token):
     message = token + '\n'
     writer.write(message.encode())
 
-    data = await reader.readline()  # {"nickname": ... , "account_hash": ...}
+    data = await reader.readline()
 
     response = json.loads(data.decode())
     if not response:
@@ -52,7 +52,7 @@ async def authorise(reader, writer, token):
         print("Invalid token. Check it or register again")
         return False
 
-    data = await reader.readline()  # Welcome to chat! Post your message below
+    data = await reader.readline()
     logging.info('Received: {}'.format(data.decode()))
     return True
 
@@ -60,7 +60,7 @@ async def authorise(reader, writer, token):
 async def dive_into_chatting(host, port, token, username, message):
     reader, writer = await connect((host, port))
 
-    await reader.readline()  # 'Hello %username%!
+    await reader.readline()
 
     if token:
         token_is_valid = await authorise(reader, writer, token)
