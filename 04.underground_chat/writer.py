@@ -49,7 +49,6 @@ async def authorise(reader, writer, token):
     response = json.loads(data.decode())
     if not response:
         logging.info("Invalid token: {}".format(token))
-        print("Invalid token. Check it or register again")
         return False
 
     data = await reader.readline()
@@ -69,6 +68,8 @@ async def dive_into_chatting(host, port, token, username, message):
             # without explicit token for next requests
             os.environ["TOKEN"] = token
             await submit_message(reader, writer, message)
+        else:
+            print("Invalid token. Check it or register again")
     elif username:
         await register(reader, writer, username)
         await submit_message(reader, writer, message)
