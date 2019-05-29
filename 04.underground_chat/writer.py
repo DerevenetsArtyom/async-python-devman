@@ -57,25 +57,25 @@ async def authorise(reader, writer, token):
 
 
 async def dive_into_chatting(host, port, token, username, message):
-    reader, writer = await connect((host, port))
+    try:
+        reader, writer = await connect((host, port))
+        await reader.readline()
 
-    await reader.readline()
-
-    if token:
-        token_is_valid = await authorise(reader, writer, token)
-        if token_is_valid:
-            # Override token in env to be able to send messages
-            # without explicit token for next requests
-            os.environ["TOKEN"] = token
+        if token:
+            token_is_valid = await authorise(reader, writer, token)
+            if token_is_valid:
+                # Override token in env to be able to send messages
+                # without explicit token for next requests
+                os.environ["TOKEN"] = token
+                await submit_message(reader, writer, message)
+            else:
+                print("Invalid token. Check it or register again")
+        elif username:
+            await register(reader, writer, username)
             await submit_message(reader, writer, message)
-        else:
-            print("Invalid token. Check it or register again")
-    elif username:
-        await register(reader, writer, username)
-        await submit_message(reader, writer, message)
-
-    logging.info('Close the connection')
-    writer.close()
+    finally:
+        logging.info('Close the connection')
+        writer.close()
 
 
 def get_arguments(host, port, token, username, message):
