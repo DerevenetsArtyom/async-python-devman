@@ -78,11 +78,14 @@ def main():
         os.getenv('SERVER_READ_PORT', SERVER_READ_PORT),
         os.getenv('HISTORY', HISTORY),
     )
-
     loop = asyncio.get_event_loop()
-    loop.set_debug(False)
-    loop.run_until_complete(tcp_client(**args))
-    loop.close()
+
+    try:
+        loop.run_until_complete(tcp_client(**args))
+    except KeyboardInterrupt:
+        pass
+    finally:
+        loop.stop()
 
 
 if __name__ == '__main__':

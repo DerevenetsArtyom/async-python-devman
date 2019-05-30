@@ -122,9 +122,12 @@ def main():
     )
 
     loop = asyncio.get_event_loop()
-    loop.set_debug(False)
-    loop.run_until_complete(dive_into_chatting(**args))
-    loop.close()
+    try:
+        loop.run_until_complete(dive_into_chatting(**args))
+    except KeyboardInterrupt:
+        pass
+    finally:
+        loop.stop()
 
 
 if __name__ == '__main__':
