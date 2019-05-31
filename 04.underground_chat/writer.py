@@ -62,8 +62,8 @@ async def authorise(reader, writer, token):
 
 
 async def dive_into_chatting(host, port, token, username, message):
+    reader, writer = await connect((host, port))
     try:
-        reader, writer = await connect((host, port))
         await reader.readline()
 
         if token:
