@@ -41,3 +41,15 @@
     * launch the site
     * archive files
     * make the code asynchronous
+
+* ## [4. Connect to the underground chat](04.underground_chat/README.md)
+    This is a client for an anonymous chat - the message history is not saved, you can enter and exit at any time.
+    Messages should arrive instantly, and if the Internet suddenly turns off, the application should reconnect automatically.
+    Program through the command line is able to do:
+
+    * connect to chat
+    * read users messages 
+    * save chat history to log file
+    * authorize existing user by token
+    * create new account with provided username
+    * join the conversation and write to chat
