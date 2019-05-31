@@ -12,6 +12,7 @@ from constants import SERVER_WRITE_PORT, SERVER_HOST
 async def submit_message(reader, writer, message):
     message = '{}\n\n'.format(sanitize(message))
     writer.write(message.encode())
+    await writer.drain()
     logging.info('Sent message: {}'.format(sanitize(message)))
 
     data = await reader.readline()
@@ -22,10 +23,13 @@ async def register(reader, writer, username):
     logging.info('Register: Try username {}'.format(username))
 
     writer.write('\n'.encode())
+    await writer.drain()
+
     await reader.readline()
 
     message = '{}\n'.format(sanitize(username))
     writer.write(message.encode())
+    await writer.drain()
 
     data = await reader.readline()
 
@@ -43,6 +47,7 @@ async def register(reader, writer, username):
 async def authorise(reader, writer, token):
     message = token + '\n'
     writer.write(message.encode())
+    await writer.drain()
 
     data = await reader.readline()
 
