@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key, find_dotenv
 
 from utils import connect, sanitize
 from constants import SERVER_WRITE_PORT, SERVER_HOST
@@ -30,11 +30,11 @@ async def register(reader, writer, username):
     data = await reader.readline()
 
     response = json.loads(data.decode())
-    os.environ['TOKEN'] = response['account_hash']
+    set_key(find_dotenv(), 'TOKEN', response['account_hash'])
 
     logging.info('Register: Username "{}" registered with token {}'.format(
         sanitize(username),
-        os.environ['TOKEN']
+        response['account_hash']
     ))
 
     await reader.readline()
