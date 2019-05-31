@@ -1,30 +1,13 @@
 import argparse
 import asyncio
-import datetime
-import os
 import logging
+import os
 
 import aiofiles
 from dotenv import load_dotenv
 
 from constants import SERVER_READ_PORT, SERVER_HOST, HISTORY
-
-
-async def connect(server, history):
-    """Set up re-connection for client"""
-    while True:
-        try:
-            reader, writer = await asyncio.open_connection(*server)
-            async with aiofiles.open(history, 'a') as file:
-                await log_to_file('Connection set up!', file)
-            return reader, writer
-        except (ConnectionRefusedError, ConnectionResetError) as e:
-            logging.info(e)
-            async with aiofiles.open(history, 'a') as file:
-                await log_to_file(
-                    "Connection error, retrying in 5 seconds...", file)
-            logging.info("Connection error, retrying in 5 seconds...")
-            await asyncio.sleep(5)
+from utils import connect, log_to_file
 
 
 async def tcp_client(host, port, history):
@@ -40,15 +23,8 @@ async def tcp_client(host, port, history):
         except Exception as e:
             logging.info(e)
             continue
-
-
-async def log_to_file(message, file):
-    now = datetime.datetime.now()
-    timestamp = now.strftime("%Y.%m.%d %H:%M")
-
-    log = f'[{timestamp}] {message}'
-    await file.write(log)
-    logging.info(message)
+        finally:
+            writer.close()
 
 
 def get_arguments(host, port, history):
