@@ -7,7 +7,7 @@ import aiofiles
 from dotenv import load_dotenv
 
 from constants import SERVER_READ_PORT, SERVER_HOST, HISTORY
-from utils import connect, log_to_file
+from helpers import connect, log_to_file
 
 
 async def tcp_client(host, port, history):

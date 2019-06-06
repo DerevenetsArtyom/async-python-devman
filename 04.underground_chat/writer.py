@@ -5,7 +5,7 @@ import logging
 import os
 from dotenv import load_dotenv, set_key, find_dotenv
 
-from utils import connect, sanitize
+from helpers import connect, sanitize
 from constants import SERVER_WRITE_PORT, SERVER_HOST
 
 
