@@ -19,14 +19,22 @@ SERVER_READ_PORT = 5000
 HISTORY = 'history.txt'
 
 
-async def save_messages_to_file(filepath, queue):
+async def save_messages_to_file(filepath, logging_queue):
+    """Wait until 'logging_queue' has any message and write it to log file"""
     async with aiofiles.open(filepath, 'a') as file:
         while True:
-            message = await queue.get()  # wait until an item is available
+            message = await logging_queue.get()
             await log_to_file(message, file)
 
 
 async def read_messages(host, port, history, messages_queue, logging_queue):
+    """
+    Read messages from the remote server and put it in 'messages_queue' to be
+    displayed in GUI afterwards.
+    Also put messages in 'logging_queue' to save it to log file.
+    If there is any messages in log file - display it first in GUI.
+    """
+
     async with aiofiles.open(history) as file:
         async for line in file:
             messages_queue.put_nowait(line.strip())  # remove \n from line
