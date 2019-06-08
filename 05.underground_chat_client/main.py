@@ -13,11 +13,6 @@ from helpers import connect, log_to_file
 # другая слушает сервер,
 # третья отравляет сообщения.
 
-SERVER_HOST = 'minechat.dvmn.org'
-SERVER_WRITE_PORT = 5050
-SERVER_READ_PORT = 5000
-HISTORY = 'history.txt'
-
 
 async def save_messages_to_file(filepath, logging_queue):
     """Wait until 'logging_queue' has any message and write it to log file"""
@@ -91,9 +86,9 @@ def get_arguments(host, port, history):
 def main():
     load_dotenv()
     args = get_arguments(
-        os.getenv('CHAT_HOST', SERVER_HOST),
-        os.getenv('SERVER_READ_PORT', SERVER_READ_PORT),
-        os.getenv('HISTORY', HISTORY),
+        os.getenv('CHAT_HOST'),
+        os.getenv('SERVER_READ_PORT'),
+        os.getenv('HISTORY'),
     )
 
     asyncio.run(start(**args))
