@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import gui
 from helpers import connect, log_to_file
 
+
 # Программе понадобятся несколько параллельных задач —
 # одна рисует окно интерфейса,
 # другая слушает сервер,
@@ -36,9 +37,10 @@ async def read_messages(host, port, history, messages_queue, logging_queue):
     If there is any messages in log file - display it first in GUI.
     """
 
-    async with aiofiles.open(history) as file:
-        async for line in file:
-            messages_queue.put_nowait(line.strip())  # remove \n from line
+    if os.path.exists(history):
+        async with aiofiles.open(history) as file:
+            async for line in file:
+                messages_queue.put_nowait(line.strip())  # remove \n from line
 
     while True:
         reader, writer = await connect((host, port))
