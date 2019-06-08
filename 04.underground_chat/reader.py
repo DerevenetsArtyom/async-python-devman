@@ -50,7 +50,7 @@ def main():
     )
     load_dotenv()
     args = get_arguments(
-        os.getenv('CHAT_HOST', SERVER_HOST),
+        os.getenv('SERVER_HOST', SERVER_HOST),
         os.getenv('SERVER_READ_PORT', SERVER_READ_PORT),
         os.getenv('HISTORY', HISTORY),
     )
