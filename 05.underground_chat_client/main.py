@@ -19,10 +19,6 @@ SERVER_READ_PORT = 5000
 HISTORY = 'history.txt'
 
 
-# Все сообщения, полученные от сервера попадут в файл с историей переписки.
-# При повторном запуске программа загрузит историю и отобразит её в графическом интерфейсе.
-
-
 async def save_messages_to_file(filepath, queue):
     async with aiofiles.open(filepath, 'a') as file:
         while True:
@@ -30,7 +26,11 @@ async def save_messages_to_file(filepath, queue):
             await log_to_file(message, file)
 
 
-async def read_messages(host, port, messages_queue, logging_queue):
+async def read_messages(host, port, history, messages_queue, logging_queue):
+    async with aiofiles.open(history) as file:
+        async for line in file:
+            messages_queue.put_nowait(line.strip())  # remove \n from line
+
     while True:
         reader, writer = await connect((host, port))
         try:
@@ -59,7 +59,7 @@ async def start(host, port, history):
     logging_queue = asyncio.Queue()  # use to write incoming messages to file
 
     await asyncio.gather(
-        read_messages(host, port, messages_queue, logging_queue),
+        read_messages(host, port, history, messages_queue, logging_queue),
         gui.draw(messages_queue, sending_queue, status_updates_queue),
         save_messages_to_file(history, logging_queue)
     )
