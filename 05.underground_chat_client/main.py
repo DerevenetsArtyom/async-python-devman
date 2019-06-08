@@ -22,6 +22,12 @@ async def save_messages_to_file(filepath, logging_queue):
             await log_to_file(message, file)
 
 
+async def send_messages(host, port, sending_queue):
+    while True:
+        message = await sending_queue.get()
+        print(message)
+
+
 async def read_messages(host, port, history, messages_queue, logging_queue):
     """
     Read messages from the remote server and put it in 'messages_queue' to be
@@ -62,9 +68,11 @@ async def start(host, port, history):
     logging_queue = asyncio.Queue()  # use to write incoming messages to file
 
     await asyncio.gather(
-        read_messages(host, port, history, messages_queue, logging_queue),
         gui.draw(messages_queue, sending_queue, status_updates_queue),
-        save_messages_to_file(history, logging_queue)
+
+        read_messages(host, port, history, messages_queue, logging_queue),
+        save_messages_to_file(history, logging_queue),
+        send_messages(host, port, sending_queue),
     )
 
 
@@ -86,7 +94,7 @@ def get_arguments(host, port, history):
 def main():
     load_dotenv()
     args = get_arguments(
-        os.getenv('CHAT_HOST'),
+        os.getenv('SERVER_HOST'),
         os.getenv('SERVER_READ_PORT'),
         os.getenv('HISTORY'),
     )
