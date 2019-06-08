@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 
 
@@ -14,3 +15,12 @@ async def connect(server):
             logging.info("Connection error, retrying in 5 seconds...")
 
             await asyncio.sleep(5)
+
+
+async def log_to_file(message, file):
+    now = datetime.datetime.now()
+    timestamp = now.strftime("%Y.%m.%d %H:%M")
+
+    log = f'[{timestamp}] {message}'
+    await file.write(log)
+    logging.info(message)
