@@ -1,6 +1,9 @@
 import asyncio
 import datetime
 import logging
+import os
+
+import aiofiles
 
 
 async def connect(server):
@@ -24,3 +27,10 @@ async def log_to_file(message, file):
     log = f'[{timestamp}] {message}'
     await file.write(log)
     logging.info(message)
+
+
+async def display_from_log_file(history, messages_queue):
+    if os.path.exists(history):
+        async with aiofiles.open(history) as file:
+            async for line in file:
+                messages_queue.put_nowait(line.strip())  # remove \n from line
