@@ -55,7 +55,7 @@ async def read_messages(host, port, history, messages_queue, logging_queue):
             writer.close()
 
 
-async def start(host, port, history):
+async def start(host, read_port, write_port, token, history):
     # Queues must be created inside the loop.
     # If create them outside the loop created for asyncio.run(),
     # so they use events.get_event_loop().
@@ -69,21 +69,27 @@ async def start(host, port, history):
     await asyncio.gather(
         gui.draw(messages_queue, sending_queue, status_updates_queue),
 
-        read_messages(host, port, history, messages_queue, logging_queue),
+        read_messages(host, read_port, history, messages_queue, logging_queue),
+        send_messages(host, write_port, token, sending_queue),
         save_messages_to_file(history, logging_queue),
-        send_messages(host, port, sending_queue),
     )
 
 
-def get_arguments(host, port, history):
+def get_arguments(host, read_port, write_port, token, history):
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', type=str, help='Host to connect')
-    parser.add_argument('--port', type=str, help='Port to connect')
+    parser.add_argument('--read-port', type=str,
+                        help='Port to connect for reading')
+    parser.add_argument('--write-port', type=str,
+                        help='Port to connect for writting')
+    parser.add_argument('--token', type=str, help='Token')
     parser.add_argument('--history', type=str, help='Path to history file')
 
     parser.set_defaults(
         host=host,
-        port=port,
+        read_port=read_port,
+        write_port=write_port,
+        token=token,
         history=history,
     )
     args = parser.parse_args()
@@ -95,7 +101,10 @@ def main():
     args = get_arguments(
         os.getenv('SERVER_HOST'),
         os.getenv('SERVER_READ_PORT'),
+        os.getenv('SERVER_WRITE_PORT'),
+        os.getenv('TOKEN'),
         os.getenv('HISTORY'),
+        # os.getenv('USERNAME'),
     )
 
     asyncio.run(start(**args))
