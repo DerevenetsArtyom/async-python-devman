@@ -1,18 +1,14 @@
 import argparse
 import asyncio
+import logging
 import os
 
 import aiofiles
 from dotenv import load_dotenv
 
 import gui
+from chat_utils import submit_message, authorise
 from helpers import connect, log_to_file, display_from_log_file
-
-
-# Программе понадобятся несколько параллельных задач —
-# одна рисует окно интерфейса,
-# другая слушает сервер,
-# третья отравляет сообщения.
 
 
 async def save_messages_to_file(filepath, logging_queue):
@@ -23,10 +19,27 @@ async def save_messages_to_file(filepath, logging_queue):
             await log_to_file(message, file)
 
 
-async def send_messages(host, port, sending_queue):
+async def send_messages(host, write_port, token, sending_queue):
     while True:
-        message = await sending_queue.get()
-        print(message)
+        reader, writer = await connect((host, write_port))
+
+        try:
+            await reader.readline()
+
+            if token:
+                token_is_valid = await authorise(reader, writer, token)
+                if token_is_valid:
+                    # Override token in env to be able to send messages
+                    # without explicit token for next requests
+                    os.environ["TOKEN"] = token
+
+                    message = await sending_queue.get()
+                    await submit_message(reader, writer, message)
+                else:
+                    print("Invalid token. Check it or register again")
+
+        finally:
+            writer.close()
 
 
 async def read_messages(host, port, history, messages_queue, logging_queue):
@@ -97,6 +110,12 @@ def get_arguments(host, read_port, write_port, token, history):
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s: %(message)s',
+        datefmt='%H:%M:%S',
+    )
+
     load_dotenv()
     args = get_arguments(
         os.getenv('SERVER_HOST'),
