@@ -3,20 +3,11 @@ import asyncio
 import logging
 import os
 
-import aiofiles
 from dotenv import load_dotenv
 
 import gui
-from chat_utils import submit_message, authorise
-from helpers import connect, log_to_file, display_from_log_file
-
-
-async def save_messages_to_file(filepath, logging_queue):
-    """Wait until 'logging_queue' has any message and write it to log file"""
-    async with aiofiles.open(filepath, 'a') as file:
-        while True:
-            message = await logging_queue.get()
-            await log_to_file(message, file)
+from chat_utils import submit_message, authorise, connect
+from files_utils import display_from_log_file
 
 
 async def send_messages(host, write_port, token, sending_queue):

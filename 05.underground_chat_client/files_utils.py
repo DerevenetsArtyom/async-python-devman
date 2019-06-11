@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import logging
 import os
@@ -6,18 +5,12 @@ import os
 import aiofiles
 
 
-async def connect(server):
-    """Set up re-connection for client"""
-    while True:
-        try:
-            reader, writer = await asyncio.open_connection(*server)
-            return reader, writer
-
-        except (ConnectionRefusedError, ConnectionResetError) as e:
-            logging.info(e)
-            logging.info("Connection error, retrying in 5 seconds...")
-
-            await asyncio.sleep(5)
+async def save_messages_to_file(filepath, logging_queue):
+    """Wait until 'logging_queue' has any message and write it to log file"""
+    async with aiofiles.open(filepath, 'a') as file:
+        while True:
+            message = await logging_queue.get()
+            await log_to_file(message, file)
 
 
 async def log_to_file(message, file):
