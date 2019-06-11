@@ -22,7 +22,7 @@ async def log_to_file(message, file):
     logging.info(message)
 
 
-async def display_from_log_file(history, messages_queue):
+async def load_from_log_file(history, messages_queue):
     if os.path.exists(history):
         async with aiofiles.open(history) as file:
             async for line in file:

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 import gui
 from chat_utils import submit_message, authorise, connect
-from files_utils import display_from_log_file
+from files_utils import load_from_log_file, save_messages_to_file
 
 
 async def send_messages(host, write_port, token, sending_queue):
@@ -41,7 +41,7 @@ async def read_messages(host, port, history, messages_queue, logging_queue):
     If there is any messages in log file - display it first in GUI.
     """
 
-    await display_from_log_file(history, messages_queue)
+    await load_from_log_file(history, messages_queue)
 
     while True:
         reader, writer = await connect((host, port))
