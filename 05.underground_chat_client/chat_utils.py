@@ -25,10 +25,10 @@ async def submit_message(reader, writer, message):
     message = '{}\n\n'.format(sanitize(message))
     writer.write(message.encode())
     await writer.drain()
-    logging.info('Sent message: {}'.format(sanitize(message)))
+    logging.info('submit_message: Sent message: {}'.format(sanitize(message)))
 
     data = await reader.readline()
-    logging.info('Received: {}'.format(data.decode()))
+    logging.info('submit_message: Received: {}'.format(data.decode()))
 
 
 async def authorise(reader, writer, token):
@@ -44,5 +44,5 @@ async def authorise(reader, writer, token):
         return False
 
     data = await reader.readline()
-    logging.info('Received: {}'.format(data.decode()))
+    logging.info('authorise: Received: {}'.format(data.decode()))
     return True

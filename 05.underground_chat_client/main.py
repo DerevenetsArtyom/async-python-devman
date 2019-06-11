@@ -11,6 +11,7 @@ from files_utils import load_from_log_file, save_messages_to_file
 
 
 async def send_messages(host, write_port, token, sending_queue):
+    # XXX: before every send we call 'authorise' and check token. Is that OK?
     while True:
         reader, writer = await connect((host, write_port))
 
@@ -35,10 +36,10 @@ async def send_messages(host, write_port, token, sending_queue):
 
 async def read_messages(host, port, history, messages_queue, logging_queue):
     """
-    Read messages from the remote server and put it in 'messages_queue' to be
-    displayed in GUI afterwards.
+    Read messages from the remote server and put it
+    in 'messages_queue' to be displayed in GUI afterwards.
     Also put messages in 'logging_queue' to save it to log file.
-    If there is any messages in log file - display it first in GUI.
+    If there is any messages already in the log file - display it first in GUI.
     """
 
     await load_from_log_file(history, messages_queue)
@@ -117,6 +118,7 @@ def main():
         # os.getenv('USERNAME'),
     )
 
+    # TODO: add graceful shutdown
     asyncio.run(start(**args))
 
 
