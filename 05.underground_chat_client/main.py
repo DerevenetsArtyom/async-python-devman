@@ -4,10 +4,12 @@ import logging
 import os
 
 from dotenv import load_dotenv
+from tkinter import messagebox
 
 import gui
 from chat_utils import submit_message, authorise, connect
 from files_utils import load_from_log_file, save_messages_to_file
+from exceptions import InvalidToken
 
 
 async def send_messages(host, write_port, token, sending_queue):
@@ -18,17 +20,20 @@ async def send_messages(host, write_port, token, sending_queue):
         try:
             await reader.readline()
 
-            if token:
-                token_is_valid = await authorise(reader, writer, token)
-                if token_is_valid:
-                    # Override token in env to be able to send messages
-                    # without explicit token for next requests
-                    os.environ["TOKEN"] = token
+            token_is_valid = await authorise(reader, writer, token)
+            if token_is_valid:
+                # Override token in env to be able to send messages
+                # without explicit token for next requests
+                os.environ["TOKEN"] = token
 
-                    message = await sending_queue.get()
-                    await submit_message(reader, writer, message)
-                else:
-                    print("Invalid token. Check it or register again")
+                message = await sending_queue.get()
+                await submit_message(reader, writer, message)
+            else:
+                messagebox.showerror(
+                    "Invalid token",
+                    "Check the token, server couldn't recognize it"
+                )
+                raise InvalidToken()
 
         finally:
             writer.close()
@@ -71,13 +76,17 @@ async def start(host, read_port, write_port, token, history):
     status_updates_queue = asyncio.Queue()
     logging_queue = asyncio.Queue()  # use to write incoming messages to file
 
-    await asyncio.gather(
-        gui.draw(messages_queue, sending_queue, status_updates_queue),
+    try:
+        await asyncio.gather(
+            gui.draw(messages_queue, sending_queue, status_updates_queue),
 
-        read_messages(host, read_port, history, messages_queue, logging_queue),
-        send_messages(host, write_port, token, sending_queue),
-        save_messages_to_file(history, logging_queue),
-    )
+            read_messages(host, read_port, history, messages_queue, logging_queue),
+            send_messages(host, write_port, token, sending_queue),
+            save_messages_to_file(history, logging_queue),
+        )
+    except InvalidToken:
+        print('InvalidToken')
+        return
 
 
 def get_arguments(host, read_port, write_port, token, history):
