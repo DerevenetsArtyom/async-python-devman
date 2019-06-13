@@ -2,29 +2,41 @@ import argparse
 import asyncio
 import logging
 import os
+from tkinter import messagebox
 
 from dotenv import load_dotenv
-from tkinter import messagebox
 
 import gui
 from chat_utils import submit_message, authorise, connect
-from files_utils import load_from_log_file, save_messages_to_file
 from exceptions import InvalidToken
+from files_utils import load_from_log_file, save_messages_to_file
+from gui import (ReadConnectionStateChanged, NicknameReceived,
+                 SendingConnectionStateChanged)
 
 
-async def send_messages(host, write_port, token, sending_queue):
+async def send_messages(host, write_port, token,
+                        sending_queue, status_updates_queue):
     # XXX: before every send we call 'authorise' and check token. Is that OK?
+
+    status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
+
     while True:
         reader, writer = await connect((host, write_port))
+        status_updates_queue.put_nowait(
+            SendingConnectionStateChanged.ESTABLISHED
+        )
 
         try:
             await reader.readline()
 
-            token_is_valid = await authorise(reader, writer, token)
+            token_is_valid, username = await authorise(reader, writer, token)
             if token_is_valid:
                 # Override token in env to be able to send messages
                 # without explicit token for next requests
                 os.environ["TOKEN"] = token
+
+                # Show received username in GUI
+                status_updates_queue.put_nowait(NicknameReceived(username))
 
                 message = await sending_queue.get()
                 await submit_message(reader, writer, message)
@@ -36,10 +48,14 @@ async def send_messages(host, write_port, token, sending_queue):
                 raise InvalidToken()
 
         finally:
+            status_updates_queue.put_nowait(
+                SendingConnectionStateChanged.CLOSED
+            )
             writer.close()
 
 
-async def read_messages(host, port, history, messages_queue, logging_queue):
+async def read_messages(host, port, history, messages_queue,
+                        logging_queue, status_updates_queue):
     """
     Read messages from the remote server and put it
     in 'messages_queue' to be displayed in GUI afterwards.
@@ -49,8 +65,11 @@ async def read_messages(host, port, history, messages_queue, logging_queue):
 
     await load_from_log_file(history, messages_queue)
 
+    status_updates_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
+
     while True:
         reader, writer = await connect((host, port))
+        status_updates_queue.put_nowait(ReadConnectionStateChanged.ESTABLISHED)
         try:
             while True:
                 data = await reader.readline()
@@ -62,6 +81,7 @@ async def read_messages(host, port, history, messages_queue, logging_queue):
             print(e)
             continue
         finally:
+            status_updates_queue.put_nowait(ReadConnectionStateChanged.CLOSED)
             writer.close()
 
 
@@ -80,11 +100,16 @@ async def start(host, read_port, write_port, token, history):
         await asyncio.gather(
             gui.draw(messages_queue, sending_queue, status_updates_queue),
 
-            read_messages(host, read_port, history, messages_queue, logging_queue),
-            send_messages(host, write_port, token, sending_queue),
+            read_messages(host, read_port, history, messages_queue,
+                          logging_queue, status_updates_queue),
+
+            send_messages(host, write_port, token, sending_queue,
+                          status_updates_queue),
+
             save_messages_to_file(history, logging_queue),
         )
     except InvalidToken:
+        # TODO: this actually doesn't work, program doesn't stop gracefully ((
         print('InvalidToken')
         return
 
@@ -127,7 +152,7 @@ def main():
         # os.getenv('USERNAME'),
     )
 
-    # TODO: add graceful shutdown
+    # TODO: add graceful shutdown: KeyboardInterrupt, gui.TkAppClosed
     asyncio.run(start(**args))
 
 
