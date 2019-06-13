@@ -14,9 +14,11 @@ from gui import (ReadConnectionStateChanged, NicknameReceived,
                  SendingConnectionStateChanged)
 
 
-async def send_messages(host, write_port, token,
-                        sending_queue, status_updates_queue):
+async def send_messages(host, write_port, token, sending_queue,
+                        status_updates_queue, watchdog_queue):
     # XXX: before every send we call 'authorise' and check token. Is that OK?
+
+    # TODO: write/put messages in watchdog_queue
 
     status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
 
@@ -54,14 +56,15 @@ async def send_messages(host, write_port, token,
             writer.close()
 
 
-async def read_messages(host, port, history, messages_queue,
-                        logging_queue, status_updates_queue):
+async def read_messages(host, port, history, messages_queue, logging_queue,
+                        status_updates_queue, watchdog_queue):
     """
     Read messages from the remote server and put it
     in 'messages_queue' to be displayed in GUI afterwards.
     Also put messages in 'logging_queue' to save it to log file.
     If there is any messages already in the log file - display it first in GUI.
     """
+    # TODO: write/put messages in watchdog_queue
 
     await load_from_log_file(history, messages_queue)
 
@@ -85,6 +88,11 @@ async def read_messages(host, port, history, messages_queue,
             writer.close()
 
 
+async def watch_for_connection(watchdog_queue):
+    # TODO: listen / wait messages in watchdog_queue
+    pass
+
+
 async def start(host, read_port, write_port, token, history):
     # Queues must be created inside the loop.
     # If create them outside the loop created for asyncio.run(),
@@ -94,19 +102,23 @@ async def start(host, read_port, write_port, token, history):
     messages_queue = asyncio.Queue()
     sending_queue = asyncio.Queue()
     status_updates_queue = asyncio.Queue()
+
     logging_queue = asyncio.Queue()  # use to write incoming messages to file
+    watchdog_queue = asyncio.Queue()  # use to track server connection
 
     try:
         await asyncio.gather(
             gui.draw(messages_queue, sending_queue, status_updates_queue),
 
             read_messages(host, read_port, history, messages_queue,
-                          logging_queue, status_updates_queue),
+                          logging_queue, status_updates_queue, watchdog_queue),
 
             send_messages(host, write_port, token, sending_queue,
-                          status_updates_queue),
+                          status_updates_queue, watchdog_queue),
 
             save_messages_to_file(history, logging_queue),
+
+            watch_for_connection(watchdog_queue)
         )
     except InvalidToken:
         # TODO: this actually doesn't work, program doesn't stop gracefully ((
