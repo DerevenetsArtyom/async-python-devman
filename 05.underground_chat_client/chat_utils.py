@@ -41,8 +41,8 @@ async def authorise(reader, writer, token):
     response = json.loads(data.decode())
     if not response:
         logging.info("Invalid token: {}".format(token))
-        return False
+        return False, _
 
     data = await reader.readline()
     logging.info('authorise: Received: {}'.format(data.decode()))
-    return True
+    return True, response["nickname"]
