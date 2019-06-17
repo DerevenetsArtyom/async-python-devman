@@ -17,5 +17,3 @@ def setup_logger(logger_name, log_file=None, level=logging.INFO):
                                   datefmt='%H:%M:%S')
     file_handler.setFormatter(formatter)
     stream_handler.setFormatter(formatter)
-
-

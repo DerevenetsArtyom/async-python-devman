@@ -13,12 +13,15 @@ from files_utils import load_from_log_file, save_messages_to_file
 from gui import (ReadConnectionStateChanged, NicknameReceived,
                  SendingConnectionStateChanged)
 
+from loggers import setup_logger
+
+main_logger = logging.getLogger('main_logger')
+watchdog_logger = logging.getLogger('watchdog_logger')
+
 
 async def send_messages(host, write_port, token, sending_queue,
                         status_updates_queue, watchdog_queue):
     # XXX: before every send we call 'authorise' and check token. Is that OK?
-
-    # TODO: write/put messages in watchdog_queue
 
     status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
 
@@ -30,6 +33,7 @@ async def send_messages(host, write_port, token, sending_queue,
 
         try:
             await reader.readline()
+            watchdog_queue.put_nowait('Connection is alive. Prompt before auth')
 
             token_is_valid, username = await authorise(reader, writer, token)
             if token_is_valid:
@@ -40,8 +44,13 @@ async def send_messages(host, write_port, token, sending_queue,
                 # Show received username in GUI
                 status_updates_queue.put_nowait(NicknameReceived(username))
 
+                watchdog_queue.put_nowait('Connection is alive. '
+                                          'Authorization done')
+
                 message = await sending_queue.get()
                 await submit_message(reader, writer, message)
+                watchdog_queue.put_nowait('Connection is alive. Message sent')
+
             else:
                 messagebox.showerror(
                     "Invalid token",
@@ -64,7 +73,7 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
     Also put messages in 'logging_queue' to save it to log file.
     If there is any messages already in the log file - display it first in GUI.
     """
-    # TODO: write/put messages in watchdog_queue
+    watchdog_message = 'Connection is alive. New message in chat'
 
     await load_from_log_file(history, messages_queue)
 
@@ -79,6 +88,7 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
                 message = data.decode()
                 messages_queue.put_nowait(message.strip())
                 logging_queue.put_nowait(message)
+                watchdog_queue.put_nowait(watchdog_message)
 
         except Exception as e:
             print(e)
@@ -89,8 +99,9 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
 
 
 async def watch_for_connection(watchdog_queue):
-    # TODO: listen / wait messages in watchdog_queue
-    pass
+    while True:
+        message = await watchdog_queue.get()
+        watchdog_logger.info(message)
 
 
 async def start(host, read_port, write_port, token, history):
@@ -148,11 +159,8 @@ def get_arguments(host, read_port, write_port, token, history):
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s: %(message)s',
-        datefmt='%H:%M:%S',
-    )
+    setup_logger('main_logger')
+    setup_logger('watchdog_logger')
 
     load_dotenv()
     args = get_arguments(
