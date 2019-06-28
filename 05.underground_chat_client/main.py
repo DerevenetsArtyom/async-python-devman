@@ -44,8 +44,8 @@ async def send_messages(host, write_port, token, sending_queue,
                 # Show received username in GUI
                 status_updates_queue.put_nowait(NicknameReceived(username))
 
-                watchdog_queue.put_nowait('Connection is alive. '
-                                          'Authorization done')
+                watchdog_queue.put_nowait(
+                    'Connection is alive. Authorization done')
 
                 message = await sending_queue.get()
                 await submit_message(reader, writer, message)
@@ -132,20 +132,20 @@ async def start(host, read_port, write_port, token, history):
             watch_for_connection(watchdog_queue)
         )
     except InvalidToken:
-        # TODO: this actually doesn't work, program doesn't stop gracefully ((
+        # TODO: #11: this actually doesn't work, program doesn't stop gracefully
         print('InvalidToken')
         return
 
 
 def get_arguments(host, read_port, write_port, token, history):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host', type=str, help='Host to connect')
-    parser.add_argument('--read-port', type=str,
-                        help='Port to connect for reading')
-    parser.add_argument('--write-port', type=str,
-                        help='Port to connect for writting')
-    parser.add_argument('--token', type=str, help='Token')
-    parser.add_argument('--history', type=str, help='Path to history file')
+    add_argument = parser.add_argument
+
+    add_argument('--host', type=str, help='Host to connect')
+    add_argument('--read-port', type=str, help='Port to connect for reading')
+    add_argument('--write-port', type=str, help='Port to connect for writing')
+    add_argument('--token', type=str, help='Token')
+    add_argument('--history', type=str, help='Path to history file')
 
     parser.set_defaults(
         host=host,
@@ -159,7 +159,7 @@ def get_arguments(host, read_port, write_port, token, history):
 
 
 def main():
-    setup_logger('main_logger')
+    # TODO: nothing going to appear in that logger: setup_logger('main_logger')
     setup_logger('watchdog_logger')
 
     load_dotenv()
@@ -172,8 +172,8 @@ def main():
         # os.getenv('USERNAME'),
     )
 
-    # TODO: add graceful shutdown: KeyboardInterrupt, gui.TkAppClosed
-    asyncio.run(start(**args))
+    # TODO: #10: add graceful shutdown: KeyboardInterrupt, gui.TkAppClosed
+    asyncio.run(start(**args), debug=True)
 
 
 if __name__ == '__main__':
