@@ -160,7 +160,8 @@ def get_arguments(host, read_port, write_port, token, history):
 
 def main():
     # TODO: nothing going to appear in that logger: setup_logger('main_logger')
-    setup_logger('watchdog_logger')
+    setup_logger('watchdog_logger',
+                 fmt='[%(asctime)s] %(message)s', datefmt='%s')
 
     load_dotenv()
     args = get_arguments(

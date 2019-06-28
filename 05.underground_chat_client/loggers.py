@@ -1,7 +1,8 @@
 import logging
 
 
-def setup_logger(logger_name, log_file=None, level=logging.INFO):
+def setup_logger(logger_name, log_file=None, level=logging.INFO,
+                 fmt='%(asctime)s: %(message)s', datefmt='%H:%M:%S'):
     if not log_file:
         log_file = f'{logger_name}.log'
 
@@ -13,7 +14,6 @@ def setup_logger(logger_name, log_file=None, level=logging.INFO):
     stream_handler = logging.StreamHandler()
     logger.addHandler(stream_handler)
 
-    formatter = logging.Formatter(fmt='%(asctime)s: %(message)s',
-                                  datefmt='%H:%M:%S')
+    formatter = logging.Formatter(fmt=fmt, datefmt=datefmt)
     file_handler.setFormatter(formatter)
     stream_handler.setFormatter(formatter)
