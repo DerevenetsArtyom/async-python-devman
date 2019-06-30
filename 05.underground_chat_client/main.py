@@ -4,6 +4,7 @@ import logging
 import os
 from tkinter import messagebox
 
+from async_timeout import timeout
 from dotenv import load_dotenv
 
 import gui
@@ -12,7 +13,6 @@ from exceptions import InvalidToken
 from files_utils import load_from_log_file, save_messages_to_file
 from gui import (ReadConnectionStateChanged, NicknameReceived,
                  SendingConnectionStateChanged)
-
 from loggers import setup_logger
 
 main_logger = logging.getLogger('main_logger')
@@ -99,9 +99,14 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
 
 
 async def watch_for_connection(watchdog_queue):
+    """Timer to monitor network connection by checking time between packages"""
     while True:
-        message = await watchdog_queue.get()
-        watchdog_logger.info(message)
+        try:
+            async with timeout(2):
+                message = await watchdog_queue.get()
+                watchdog_logger.info(message)
+        except asyncio.TimeoutError:
+            watchdog_logger.info('2s timeout is elapsed')
 
 
 async def start(host, read_port, write_port, token, history):
