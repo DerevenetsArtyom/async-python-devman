@@ -8,8 +8,7 @@ from async_timeout import timeout
 from dotenv import load_dotenv
 
 import gui
-from chat_utils import submit_message, authorise, connect
-from exceptions import InvalidToken
+from chat_utils import submit_message, authorise, connect, InvalidToken
 from files_utils import load_from_log_file, save_messages_to_file
 from gui import (ReadConnectionStateChanged, NicknameReceived,
                  SendingConnectionStateChanged)
@@ -21,16 +20,14 @@ watchdog_logger = logging.getLogger('watchdog_logger')
 
 async def send_messages(host, write_port, token, sending_queue,
                         status_updates_queue, watchdog_queue):
-    # XXX: before every send we call 'authorise' and check token. Is that OK?
-
     status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
 
-    while True:
-        reader, writer = await connect((host, write_port))
-        status_updates_queue.put_nowait(
-            SendingConnectionStateChanged.ESTABLISHED
-        )
+    reader, writer = await connect((host, write_port))
+    status_updates_queue.put_nowait(
+        SendingConnectionStateChanged.ESTABLISHED
+    )
 
+    while True:
         try:
             await reader.readline()
             watchdog_queue.put_nowait('Connection is alive. Prompt before auth')
@@ -164,6 +161,8 @@ def get_arguments(host, read_port, write_port, token, history):
 
 
 def main():
+    # TODO: check 'Схема запуска корутин' in step #15, could be wrong setup
+
     # TODO: nothing going to appear in that logger: setup_logger('main_logger')
     setup_logger('watchdog_logger',
                  fmt='[%(asctime)s] %(message)s', datefmt='%s')
