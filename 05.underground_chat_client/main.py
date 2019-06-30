@@ -123,20 +123,36 @@ async def start(host, read_port, write_port, token, history):
         await asyncio.gather(
             gui.draw(messages_queue, sending_queue, status_updates_queue),
 
-            read_messages(host, read_port, history, messages_queue,
-                          logging_queue, status_updates_queue, watchdog_queue),
-
-            send_messages(host, write_port, token, sending_queue,
-                          status_updates_queue, watchdog_queue),
-
-            save_messages_to_file(history, logging_queue),
-
-            watch_for_connection(watchdog_queue)
+            handle_connection(
+                host, read_port, write_port, history, token, messages_queue,
+                sending_queue, status_updates_queue,
+                logging_queue, watchdog_queue,
+            )
         )
     except InvalidToken:
         # TODO: #11: this actually doesn't work, program doesn't stop gracefully
         print('InvalidToken')
         return
+
+
+async def handle_connection(host, read_port, write_port, history, token,
+                            messages_queue, sending_queue, status_updates_queue,
+                            logging_queue, watchdog_queue):
+    # TODO:
+    #  * nursery
+    #  * exception handling
+    #  * infinite 'while True'
+
+    while True:
+        read_messages(host, read_port, history, messages_queue,
+                      logging_queue, status_updates_queue, watchdog_queue),
+
+        send_messages(host, write_port, token, sending_queue,
+                      status_updates_queue, watchdog_queue),
+
+        save_messages_to_file(history, logging_queue),
+
+        watch_for_connection(watchdog_queue)
 
 
 def get_arguments(host, read_port, write_port, token, history):
