@@ -3,6 +3,10 @@ import json
 import logging
 
 
+class InvalidToken(Exception):
+    pass
+
+
 async def connect(server):
     """Set up re-connection for client"""
     while True:
