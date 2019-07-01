@@ -4,6 +4,7 @@ import logging
 import os
 from tkinter import messagebox
 
+import aionursery
 from async_timeout import timeout
 from dotenv import load_dotenv
 
@@ -97,6 +98,7 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
 
 async def watch_for_connection(watchdog_queue):
     """Timer to monitor network connection by checking time between packages"""
+    # TODO: raise ConnectionError внутри watch_for_connection
     while True:
         try:
             async with timeout(2):
@@ -104,6 +106,7 @@ async def watch_for_connection(watchdog_queue):
                 watchdog_logger.info(message)
         except asyncio.TimeoutError:
             watchdog_logger.info('2s timeout is elapsed')
+            raise ConnectionError
 
 
 async def start(host, read_port, write_port, token, history):
@@ -143,16 +146,26 @@ async def handle_connection(host, read_port, write_port, history, token,
     #  * exception handling
     #  * infinite 'while True'
 
-    while True:
-        read_messages(host, read_port, history, messages_queue,
-                      logging_queue, status_updates_queue, watchdog_queue),
+    async with aionursery.Nursery() as nursery:
+        # while True:
+        try:
+            nursery.start_soon(read_messages(
+                host, read_port, history, messages_queue, logging_queue,
+                status_updates_queue, watchdog_queue
+            ))
 
-        send_messages(host, write_port, token, sending_queue,
-                      status_updates_queue, watchdog_queue),
+            nursery.start_soon(send_messages(
+                host, write_port, token, sending_queue,
+                status_updates_queue, watchdog_queue
+            ))
 
-        save_messages_to_file(history, logging_queue),
+            nursery.start_soon(save_messages_to_file(history, logging_queue))
 
-        watch_for_connection(watchdog_queue)
+            nursery.start_soon(watch_for_connection(watchdog_queue))
+        except aionursery.MultiError as e:
+            # TODO: that doesn't catch the exception.'read_messages' hangs
+            print('aionursery.MultiError')
+            print(e.exceptions)
 
 
 def get_arguments(host, read_port, write_port, token, history):
