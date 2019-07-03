@@ -10,7 +10,7 @@ from async_timeout import timeout
 from dotenv import load_dotenv
 
 import gui
-from chat_utils import submit_message, authorise, connect, InvalidToken
+from chat_utils import submit_message, authorise, connect, InvalidTokenException
 from files_utils import load_from_log_file, save_messages_to_file
 from gui import (ReadConnectionStateChanged, NicknameReceived,
                  SendingConnectionStateChanged)
@@ -121,38 +121,6 @@ async def watch_for_connection(watchdog_queue):
             raise ConnectionError
 
 
-async def start(host, read_port, write_port, token, history):
-    # Queues must be created inside the loop.
-    # If create them outside the loop created for asyncio.run(),
-    # so they use events.get_event_loop().
-    # asyncio.run() creates a new loop, and futures created for the queue
-    # in one loop can't then be used in the other.
-    messages_queue = asyncio.Queue()
-    sending_queue = asyncio.Queue()
-    status_updates_queue = asyncio.Queue()
-
-    logging_queue = asyncio.Queue()  # use to write incoming messages to file
-    watchdog_queue = asyncio.Queue()  # use to track server connection
-
-    try:
-        async with create_handy_nursery() as nursery:
-            nursery.start_soon(
-                gui.draw(messages_queue, sending_queue, status_updates_queue)
-            )
-
-            nursery.start_soon(
-                handle_connection(
-                    host, read_port, write_port, history, token, messages_queue,
-                    sending_queue, status_updates_queue,
-                    logging_queue, watchdog_queue,
-                )
-            )
-    except InvalidToken:
-        # TODO: #11: this actually doesn't work, program doesn't stop gracefully
-        print('InvalidToken')
-        return
-
-
 # TODO декоратор reconnect, если у вас такой есть в старом коде
 async def handle_connection(host, read_port, write_port, history, token,
                             messages_queue, sending_queue, status_updates_queue,
@@ -172,8 +140,6 @@ async def handle_connection(host, read_port, write_port, history, token,
                 host, write_port, token, sending_queue,
                 status_updates_queue, watchdog_queue
             ))
-
-            nursery.start_soon(save_messages_to_file(history, logging_queue))
 
             nursery.start_soon(watch_for_connection(watchdog_queue))
         except aionursery.MultiError as e:
@@ -201,19 +167,19 @@ def get_arguments(host, read_port, write_port, token, history):
         token=token,
         history=history,
     )
-    args = parser.parse_args()
-    return vars(args)
+    args_namespace = parser.parse_args()
+    args = vars(args_namespace)
+    return (args['host'], args['read_port'],
+            args['write_port'], args['token'], args['history'])
 
 
-def main():
-    # TODO: check 'Схема запуска корутин' in step #15, could be wrong setup
-
+async def main():
     # TODO: nothing going to appear in that logger: setup_logger('main_logger')
     setup_logger('watchdog_logger',
                  fmt='[%(asctime)s] %(message)s', datefmt='%s')
 
     load_dotenv()
-    args = get_arguments(
+    host, read_port, write_port, token, history = get_arguments(
         os.getenv('SERVER_HOST'),
         os.getenv('SERVER_READ_PORT'),
         os.getenv('SERVER_WRITE_PORT'),
@@ -222,9 +188,42 @@ def main():
         # os.getenv('USERNAME'),
     )
 
-    # TODO: #10: add graceful shutdown: KeyboardInterrupt, gui.TkAppClosed
-    asyncio.run(start(**args), debug=True)
+    # Queues must be created inside the loop.
+    # If create them outside the loop created for asyncio.run(),
+    # so they use events.get_event_loop().
+    # asyncio.run() creates a new loop, and futures created for the queue
+    # in one loop can't then be used in the other.
+    messages_queue = asyncio.Queue()
+    sending_queue = asyncio.Queue()
+    status_updates_queue = asyncio.Queue()
 
+    logging_queue = asyncio.Queue()  # use to write incoming messages to file
+    watchdog_queue = asyncio.Queue()  # use to track server connection
+
+    try:
+        async with create_handy_nursery() as nursery:
+            nursery.start_soon(
+                gui.draw(messages_queue, sending_queue,
+                         status_updates_queue)
+            )
+
+            nursery.start_soon(
+                handle_connection(
+                    host, read_port, write_port, history, token,
+                    messages_queue,
+                    sending_queue, status_updates_queue,
+                    logging_queue, watchdog_queue,
+                )
+            )
+
+            nursery.start_soon(save_messages_to_file(history, logging_queue))
+
+    except InvalidTokenException:
+        # TODO: #11: this actually doesn't work, program doesn't stop gracefully
+        print('InvalidToken')
+        return
+
+    # TODO: #10: add graceful shutdown: KeyboardInterrupt, gui.TkAppClosed
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

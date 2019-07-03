@@ -3,7 +3,7 @@ import json
 import logging
 
 
-class InvalidToken(Exception):
+class InvalidTokenException(Exception):
     pass
 
 
