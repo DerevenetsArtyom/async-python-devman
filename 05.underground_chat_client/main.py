@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import contextlib
 import logging
 import os
 from tkinter import messagebox
@@ -17,6 +18,17 @@ from loggers import setup_logger
 
 main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
+
+
+@contextlib.asynccontextmanager
+async def create_handy_nursery():
+    try:
+        async with aionursery.Nursery() as nursery:
+            yield nursery
+    except aionursery.MultiError as e:
+        if len(e.exceptions) == 1:
+            raise e.exceptions[0]
+        raise
 
 
 async def send_messages(host, write_port, token, sending_queue,
@@ -138,6 +150,7 @@ async def start(host, read_port, write_port, token, history):
         return
 
 
+# TODO декоратор reconnect, если у вас такой есть в старом коде
 async def handle_connection(host, read_port, write_port, history, token,
                             messages_queue, sending_queue, status_updates_queue,
                             logging_queue, watchdog_queue):
@@ -146,7 +159,7 @@ async def handle_connection(host, read_port, write_port, history, token,
     #  * exception handling
     #  * infinite 'while True'
 
-    async with aionursery.Nursery() as nursery:
+    async with create_handy_nursery() as nursery:
         # while True:
         try:
             nursery.start_soon(read_messages(
