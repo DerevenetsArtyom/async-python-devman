@@ -135,15 +135,18 @@ async def start(host, read_port, write_port, token, history):
     watchdog_queue = asyncio.Queue()  # use to track server connection
 
     try:
-        await asyncio.gather(
-            gui.draw(messages_queue, sending_queue, status_updates_queue),
-
-            handle_connection(
-                host, read_port, write_port, history, token, messages_queue,
-                sending_queue, status_updates_queue,
-                logging_queue, watchdog_queue,
+        async with create_handy_nursery() as nursery:
+            nursery.start_soon(
+                gui.draw(messages_queue, sending_queue, status_updates_queue)
             )
-        )
+
+            nursery.start_soon(
+                handle_connection(
+                    host, read_port, write_port, history, token, messages_queue,
+                    sending_queue, status_updates_queue,
+                    logging_queue, watchdog_queue,
+                )
+            )
     except InvalidToken:
         # TODO: #11: this actually doesn't work, program doesn't stop gracefully
         print('InvalidToken')
@@ -155,8 +158,6 @@ async def handle_connection(host, read_port, write_port, history, token,
                             messages_queue, sending_queue, status_updates_queue,
                             logging_queue, watchdog_queue):
     # TODO:
-    #  * nursery
-    #  * exception handling
     #  * infinite 'while True'
 
     async with create_handy_nursery() as nursery:
@@ -179,6 +180,8 @@ async def handle_connection(host, read_port, write_port, history, token,
             # TODO: that doesn't catch the exception.'read_messages' hangs
             print('aionursery.MultiError')
             print(e.exceptions)
+        except Exception as e:
+            print('Exception', e)
 
 
 def get_arguments(host, read_port, write_port, token, history):
