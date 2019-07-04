@@ -66,7 +66,7 @@ async def send_messages(host, write_port, token, sending_queue,
                     "Invalid token",
                     "Check the token, server couldn't recognize it"
                 )
-                raise InvalidToken()
+                raise InvalidTokenException()
 
         finally:
             status_updates_queue.put_nowait(
@@ -118,36 +118,35 @@ async def watch_for_connection(watchdog_queue):
                 watchdog_logger.info(message)
         except asyncio.TimeoutError:
             watchdog_logger.info('2s timeout is elapsed')
-            raise ConnectionError
+            raise ConnectionError()
 
 
 # TODO декоратор reconnect, если у вас такой есть в старом коде
 async def handle_connection(host, read_port, write_port, history, token,
                             messages_queue, sending_queue, status_updates_queue,
                             logging_queue, watchdog_queue):
-    # TODO:
-    #  * infinite 'while True'
+    while True:
+        async with create_handy_nursery() as nursery:
+            try:
+                nursery.start_soon(read_messages(
+                    host, read_port, history, messages_queue, logging_queue,
+                    status_updates_queue, watchdog_queue
+                ))
 
-    async with create_handy_nursery() as nursery:
-        # while True:
-        try:
-            nursery.start_soon(read_messages(
-                host, read_port, history, messages_queue, logging_queue,
-                status_updates_queue, watchdog_queue
-            ))
+                nursery.start_soon(send_messages(
+                    host, write_port, token, sending_queue,
+                    status_updates_queue, watchdog_queue
+                ))
 
-            nursery.start_soon(send_messages(
-                host, write_port, token, sending_queue,
-                status_updates_queue, watchdog_queue
-            ))
-
-            nursery.start_soon(watch_for_connection(watchdog_queue))
-        except aionursery.MultiError as e:
-            # TODO: that doesn't catch the exception.'read_messages' hangs
-            print('aionursery.MultiError')
-            print(e.exceptions)
-        except Exception as e:
-            print('Exception', e)
+                nursery.start_soon(watch_for_connection(watchdog_queue))
+            except aionursery.MultiError as e:
+                # TODO: that doesn't catch the exception.'read_messages' hangs
+                print('aionursery.MultiError')
+                print(e.exceptions)
+            except Exception as e:
+                print('Exception', e)
+            else:
+                print('handle_connection else part')
 
 
 def get_arguments(host, read_port, write_port, token, history):
@@ -220,10 +219,14 @@ async def main():
 
     except InvalidTokenException:
         # TODO: #11: this actually doesn't work, program doesn't stop gracefully
-        print('InvalidToken')
+        print('InvalidTokenException')
         return
 
     # TODO: #10: add graceful shutdown: KeyboardInterrupt, gui.TkAppClosed
+    # except (KeyboardInterrupt, gui.TkAppClosed):
+    #     print('exit')
+    #     exit()
+
 
 if __name__ == '__main__':
     asyncio.run(main())
