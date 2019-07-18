@@ -12,8 +12,6 @@ from dotenv import load_dotenv
 import gui
 from chat_utils import submit_message, authorise, connect, InvalidTokenException
 from files_utils import load_from_log_file, save_messages_to_file
-from gui import (ReadConnectionStateChanged, NicknameReceived,
-                 SendingConnectionStateChanged)
 from loggers import setup_logger
 
 main_logger = logging.getLogger('main_logger')
@@ -33,11 +31,11 @@ async def create_handy_nursery():
 
 async def send_messages(host, write_port, token, sending_queue,
                         status_updates_queue, watchdog_queue):
-    status_updates_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
+    status_updates_queue.put_nowait(gui.SendingConnectionStateChanged.INITIATED)
 
     reader, writer = await connect((host, write_port))
     status_updates_queue.put_nowait(
-        SendingConnectionStateChanged.ESTABLISHED
+        gui.SendingConnectionStateChanged.ESTABLISHED
     )
 
     while True:
@@ -52,7 +50,7 @@ async def send_messages(host, write_port, token, sending_queue,
                 os.environ["TOKEN"] = token
 
                 # Show received username in GUI
-                status_updates_queue.put_nowait(NicknameReceived(username))
+                status_updates_queue.put_nowait(gui.NicknameReceived(username))
 
                 watchdog_queue.put_nowait(
                     'Connection is alive. Authorization done')
@@ -70,7 +68,7 @@ async def send_messages(host, write_port, token, sending_queue,
 
         finally:
             status_updates_queue.put_nowait(
-                SendingConnectionStateChanged.CLOSED
+                gui.SendingConnectionStateChanged.CLOSED
             )
             writer.close()
 
@@ -87,11 +85,15 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
 
     await load_from_log_file(history, messages_queue)
 
-    status_updates_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
+    status_updates_queue.put_nowait(
+        gui.ReadConnectionStateChanged.INITIATED
+    )
 
     while True:
         reader, writer = await connect((host, port))
-        status_updates_queue.put_nowait(ReadConnectionStateChanged.ESTABLISHED)
+        status_updates_queue.put_nowait(
+            gui.ReadConnectionStateChanged.ESTABLISHED
+        )
         try:
             while True:
                 data = await reader.readline()
@@ -104,13 +106,14 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
             print(e)
             continue
         finally:
-            status_updates_queue.put_nowait(ReadConnectionStateChanged.CLOSED)
+            status_updates_queue.put_nowait(
+                gui.ReadConnectionStateChanged.CLOSED
+            )
             writer.close()
 
 
 async def watch_for_connection(watchdog_queue):
     """Timer to monitor network connection by checking time between packages"""
-    # TODO: raise ConnectionError внутри watch_for_connection
     while True:
         try:
             async with timeout(2):
@@ -128,17 +131,22 @@ async def handle_connection(host, read_port, write_port, history, token,
     while True:
         async with create_handy_nursery() as nursery:
             try:
-                nursery.start_soon(read_messages(
-                    host, read_port, history, messages_queue, logging_queue,
-                    status_updates_queue, watchdog_queue
-                ))
+                nursery.start_soon(
+                    read_messages(
+                        host, read_port, history, messages_queue,
+                        logging_queue, status_updates_queue, watchdog_queue
+                    )
+                )
 
-                nursery.start_soon(send_messages(
-                    host, write_port, token, sending_queue,
-                    status_updates_queue, watchdog_queue
-                ))
+                nursery.start_soon(
+                    send_messages(
+                        host, write_port, token, sending_queue,
+                        status_updates_queue, watchdog_queue
+                    )
+                )
 
                 nursery.start_soon(watch_for_connection(watchdog_queue))
+
             except aionursery.MultiError as e:
                 # TODO: that doesn't catch the exception.'read_messages' hangs
                 print('aionursery.MultiError')
@@ -174,8 +182,9 @@ def get_arguments(host, read_port, write_port, token, history):
 
 async def main():
     # TODO: nothing going to appear in that logger: setup_logger('main_logger')
-    setup_logger('watchdog_logger',
-                 fmt='[%(asctime)s] %(message)s', datefmt='%s')
+    setup_logger(
+        'watchdog_logger', fmt='[%(asctime)s] %(message)s', datefmt='%s'
+    )
 
     load_dotenv()
     host, read_port, write_port, token, history = get_arguments(
@@ -202,15 +211,13 @@ async def main():
     try:
         async with create_handy_nursery() as nursery:
             nursery.start_soon(
-                gui.draw(messages_queue, sending_queue,
-                         status_updates_queue)
+                gui.draw(messages_queue, sending_queue, status_updates_queue)
             )
 
             nursery.start_soon(
                 handle_connection(
                     host, read_port, write_port, history, token,
-                    messages_queue,
-                    sending_queue, status_updates_queue,
+                    messages_queue, sending_queue, status_updates_queue,
                     logging_queue, watchdog_queue,
                 )
             )
