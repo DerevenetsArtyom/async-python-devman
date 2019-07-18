@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import contextlib
 import logging
 import os
 from tkinter import messagebox
@@ -10,23 +9,13 @@ from async_timeout import timeout
 from dotenv import load_dotenv
 
 import gui
+from loggers import setup_logger
 from utils.chat import submit_message, authorise, connect, InvalidTokenException
 from utils.files import load_from_log_file, save_messages_to_file
-from loggers import setup_logger
+from utils.general import create_handy_nursery
 
 main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
-
-
-@contextlib.asynccontextmanager
-async def create_handy_nursery():
-    try:
-        async with aionursery.Nursery() as nursery:
-            yield nursery
-    except aionursery.MultiError as e:
-        if len(e.exceptions) == 1:
-            raise e.exceptions[0]
-        raise
 
 
 async def send_messages(host, write_port, token, sending_queue,
