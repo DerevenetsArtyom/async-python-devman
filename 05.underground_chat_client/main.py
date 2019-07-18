@@ -10,8 +10,8 @@ from async_timeout import timeout
 from dotenv import load_dotenv
 
 import gui
-from chat_utils import submit_message, authorise, connect, InvalidTokenException
-from files_utils import load_from_log_file, save_messages_to_file
+from utils.chat import submit_message, authorise, connect, InvalidTokenException
+from utils.files import load_from_log_file, save_messages_to_file
 from loggers import setup_logger
 
 main_logger = logging.getLogger('main_logger')
