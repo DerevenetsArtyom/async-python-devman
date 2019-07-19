@@ -3,6 +3,8 @@ import tkinter as tk
 from enum import Enum
 from tkinter.scrolledtext import ScrolledText
 
+from utils.general import create_handy_nursery
+
 
 class TkAppClosed(Exception):
     pass
@@ -37,7 +39,7 @@ def process_new_message(input_field, sending_queue):
     input_field.delete(0, tk.END)
 
 
-async def update_tk(root_frame, interval=1 / 120):
+async def update_tk(root_frame, interval=1/120):
     while True:
         try:
             root_frame.update()
@@ -66,9 +68,9 @@ async def update_conversation_history(panel, messages_queue):
 async def update_status_panel(status_labels, status_updates_queue):
     nickname_label, read_label, write_label = status_labels
 
-    read_label['text'] = f'Чтение: нет соединения'
-    write_label['text'] = f'Отправка: нет соединения'
-    nickname_label['text'] = f'Имя пользователя: неизвестно'
+    read_label['text'] = 'Чтение: нет соединения'
+    write_label['text'] = 'Отправка: нет соединения'
+    nickname_label['text'] = 'Имя пользователя: неизвестно'
 
     while True:
         msg = await status_updates_queue.get()
@@ -133,8 +135,12 @@ async def draw(messages_queue, sending_queue, status_updates_queue):
     conversation_panel = ScrolledText(root_frame, wrap='none')
     conversation_panel.pack(side="top", fill="both", expand=True)
 
-    await asyncio.gather(
-        update_tk(root_frame),
-        update_conversation_history(conversation_panel, messages_queue),
-        update_status_panel(status_labels, status_updates_queue)
-    )
+    async with create_handy_nursery() as nursery:
+        nursery.start_soon(update_tk(root_frame))
+        nursery.start_soon(
+            update_conversation_history(conversation_panel, messages_queue)
+        )
+        nursery.start_soon(
+            update_status_panel(status_labels, status_updates_queue),
+        )
+
