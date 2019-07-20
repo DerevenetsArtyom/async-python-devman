@@ -2,7 +2,6 @@ import argparse
 import asyncio
 import logging
 import os
-from tkinter import messagebox
 from contextlib import asynccontextmanager
 
 import aionursery
@@ -11,7 +10,7 @@ from dotenv import load_dotenv
 
 import gui
 from loggers import setup_logger
-from utils.chat import submit_message, authorise, connect, InvalidTokenException
+from utils.chat import submit_message, authorise, InvalidTokenException
 from utils.files import load_from_log_file, save_messages_to_file
 from utils.general import create_handy_nursery
 
@@ -31,48 +30,18 @@ async def get_connection(host, port, status_updates_queue, state):
         writer.close()
 
 
-async def send_messages(host, write_port, token, sending_queue,
-                        status_updates_queue, watchdog_queue):
-    send_connection_state = gui.SendingConnectionStateChanged
-    status_updates_queue.put_nowait(send_connection_state.INITIATED)
-
-    reader, writer = await connect((host, write_port))
-    status_updates_queue.put_nowait(send_connection_state.ESTABLISHED)
+async def send_messages(sending_queue, status_updates_queue,
+                        watchdog_queue, reader, writer):
+    status_updates_queue.put_nowait(
+        gui.SendingConnectionStateChanged.ESTABLISHED)
 
     while True:
-        try:
-            await reader.readline()
-            watchdog_queue.put_nowait('Connection is alive. Prompt before auth')
-
-            token_is_valid, username = await authorise(reader, writer, token)
-            if token_is_valid:
-                # Override token in env to be able to send messages
-                # without explicit token for next requests
-                os.environ["TOKEN"] = token
-
-                # Show received username in GUI
-                status_updates_queue.put_nowait(gui.NicknameReceived(username))
-
-                watchdog_queue.put_nowait(
-                    'Connection is alive. Authorization done')
-
-                message = await sending_queue.get()
-                await submit_message(reader, writer, message)
-                watchdog_queue.put_nowait('Connection is alive. Message sent')
-
-            else:
-                messagebox.showerror(
-                    "Invalid token",
-                    "Check the token, server couldn't recognize it"
-                )
-                raise InvalidTokenException()
-
-        finally:
-            status_updates_queue.put_nowait(send_connection_state.CLOSED)
-            writer.close()
+        message = await sending_queue.get()
+        await submit_message(reader, writer, message)
+        watchdog_queue.put_nowait('Connection is alive. Message sent')
 
 
-async def read_messages(host, port, history, messages_queue, logging_queue,
+async def read_messages(host, read_port, history, messages_queue, logging_queue,
                         status_updates_queue, watchdog_queue):
     """
     Read messages from the remote server and put it
@@ -86,7 +55,7 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
 
     status_updates_queue.put_nowait(read_connection_state.INITIATED)
 
-    async with get_connection(host, port, status_updates_queue,
+    async with get_connection(host, read_port, status_updates_queue,
                               read_connection_state) as (reader, _):
         status_updates_queue.put_nowait(read_connection_state.ESTABLISHED)
 
