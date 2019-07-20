@@ -71,18 +71,15 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
     If there is any messages already in the log file - display it first in GUI.
     """
     watchdog_message = 'Connection is alive. New message in chat'
+    read_connection_state = gui.ReadConnectionStateChanged
 
     await load_from_log_file(history, messages_queue)
 
-    status_updates_queue.put_nowait(
-        gui.ReadConnectionStateChanged.INITIATED
-    )
+    status_updates_queue.put_nowait(read_connection_state.INITIATED)
 
     while True:
         reader, writer = await connect((host, port))
-        status_updates_queue.put_nowait(
-            gui.ReadConnectionStateChanged.ESTABLISHED
-        )
+        status_updates_queue.put_nowait(read_connection_state.ESTABLISHED)
         try:
             while True:
                 data = await reader.readline()
@@ -90,15 +87,12 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
                 messages_queue.put_nowait(message.strip())
                 logging_queue.put_nowait(message)
                 watchdog_queue.put_nowait(watchdog_message)
-
         except Exception as e:
-            print(e)
+            print('#### read_messages', e)
             continue
         finally:
-            status_updates_queue.put_nowait(
-                gui.ReadConnectionStateChanged.CLOSED
-            )
             writer.close()
+            status_updates_queue.put_nowait(read_connection_state.CLOSED)
 
 
 async def watch_for_connection(watchdog_queue):
@@ -138,12 +132,12 @@ async def handle_connection(host, read_port, write_port, history, token,
 
             except aionursery.MultiError as e:
                 # TODO: that doesn't catch the exception.'read_messages' hangs
-                print('aionursery.MultiError')
+                print('#### aionursery.MultiError')
                 print(e.exceptions)
             except Exception as e:
-                print('Exception', e)
+                print('#### Exception', e)
             else:
-                print('handle_connection else part')
+                print('#### handle_connection else part')
 
 
 def get_arguments(host, read_port, write_port, token, history):
@@ -215,14 +209,19 @@ async def main():
 
     except InvalidTokenException:
         # TODO: #11: this actually doesn't work, program doesn't stop gracefully
-        print('InvalidTokenException')
+        print('#### InvalidTokenException')
         return
 
     # TODO: #10: add graceful shutdown: KeyboardInterrupt, gui.TkAppClosed
-    # except (KeyboardInterrupt, gui.TkAppClosed):
-    #     print('exit')
-    #     exit()
+    except (KeyboardInterrupt, gui.TkAppClosed):
+        print('******************** KeyboardInterrupt, gui.TkAppClosed')
+        # exit()
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, gui.TkAppClosed):
+        print('#### exit')
+        exit()
+
