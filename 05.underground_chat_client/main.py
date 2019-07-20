@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 from tkinter import messagebox
+from contextlib import asynccontextmanager
 
 import aionursery
 from async_timeout import timeout
@@ -14,10 +15,20 @@ from utils.chat import submit_message, authorise, connect, InvalidTokenException
 from utils.files import load_from_log_file, save_messages_to_file
 from utils.general import create_handy_nursery
 
-WATCH_CONNECTION_TIMEOUT = 2
+WATCH_CONNECTION_TIMEOUT = 20
 
 main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
+
+
+@asynccontextmanager
+async def get_connection(host, port, status_updates_queue, state):
+    reader, writer = await asyncio.open_connection(host, port)
+    try:
+        yield (reader, writer)
+    finally:
+        status_updates_queue.put_nowait(state.CLOSED)
+        writer.close()
 
 
 async def send_messages(host, write_port, token, sending_queue,
@@ -69,29 +80,22 @@ async def read_messages(host, port, history, messages_queue, logging_queue,
     Also put messages in 'logging_queue' to save it to log file.
     If there is any messages already in the log file - display it first in GUI.
     """
-    watchdog_message = 'Connection is alive. New message in chat'
     read_connection_state = gui.ReadConnectionStateChanged
 
     await load_from_log_file(history, messages_queue)
 
     status_updates_queue.put_nowait(read_connection_state.INITIATED)
 
-    while True:
-        reader, writer = await connect((host, port))
+    async with get_connection(host, port, status_updates_queue,
+                              read_connection_state) as (reader, _):
         status_updates_queue.put_nowait(read_connection_state.ESTABLISHED)
-        try:
-            while True:
-                data = await reader.readline()
-                message = data.decode()
-                messages_queue.put_nowait(message.strip())
-                logging_queue.put_nowait(message)
-                watchdog_queue.put_nowait(watchdog_message)
-        except Exception as e:
-            print('#### read_messages', e)
-            continue
-        finally:
-            writer.close()
-            status_updates_queue.put_nowait(read_connection_state.CLOSED)
+
+        while True:
+            data = await reader.readline()
+            message = data.decode()
+            messages_queue.put_nowait(message.strip())
+            logging_queue.put_nowait(message)
+            watchdog_queue.put_nowait('Connection is alive.New message in chat')
 
 
 async def watch_for_connection(watchdog_queue):
