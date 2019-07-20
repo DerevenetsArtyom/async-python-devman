@@ -14,18 +14,19 @@ from utils.chat import submit_message, authorise, connect, InvalidTokenException
 from utils.files import load_from_log_file, save_messages_to_file
 from utils.general import create_handy_nursery
 
+WATCH_CONNECTION_TIMEOUT = 2
+
 main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
 
 
 async def send_messages(host, write_port, token, sending_queue,
                         status_updates_queue, watchdog_queue):
-    status_updates_queue.put_nowait(gui.SendingConnectionStateChanged.INITIATED)
+    send_connection_state = gui.SendingConnectionStateChanged
+    status_updates_queue.put_nowait(send_connection_state.INITIATED)
 
     reader, writer = await connect((host, write_port))
-    status_updates_queue.put_nowait(
-        gui.SendingConnectionStateChanged.ESTABLISHED
-    )
+    status_updates_queue.put_nowait(send_connection_state.ESTABLISHED)
 
     while True:
         try:
@@ -56,9 +57,7 @@ async def send_messages(host, write_port, token, sending_queue,
                 raise InvalidTokenException()
 
         finally:
-            status_updates_queue.put_nowait(
-                gui.SendingConnectionStateChanged.CLOSED
-            )
+            status_updates_queue.put_nowait(send_connection_state.CLOSED)
             writer.close()
 
 
@@ -99,11 +98,11 @@ async def watch_for_connection(watchdog_queue):
     """Timer to monitor network connection by checking time between packages"""
     while True:
         try:
-            async with timeout(2):
+            async with timeout(WATCH_CONNECTION_TIMEOUT):
                 message = await watchdog_queue.get()
                 watchdog_logger.info(message)
         except asyncio.TimeoutError:
-            watchdog_logger.info('2s timeout is elapsed')
+            watchdog_logger.info(f'{WATCH_CONNECTION_TIMEOUT}s is elapsed')
             raise ConnectionError()
 
 
