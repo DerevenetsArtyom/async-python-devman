@@ -152,7 +152,7 @@ async def handle_connection(host, read_port, write_port, history, token,
                 nursery.start_soon(watch_for_connection(watchdog_queue))
                 nursery.start_soon(ping_pong(reader, writer, watchdog_queue))
 
-            # break the infinite loop to make possible to catch exeptions
+            # break the infinite loop to make possible to catch exceptions
             return
 
 
@@ -180,11 +180,10 @@ def get_arguments(host, read_port, write_port, token, history):
 
 
 async def main():
-    # TODO: nothing going to appear in that logger: setup_logger('main_logger')
+    setup_logger('main_logger')
     setup_logger(
         'watchdog_logger', fmt='[%(asctime)s] %(message)s', datefmt='%s'
     )
-    setup_logger('')
 
     load_dotenv()
     host, read_port, write_port, token, history = get_arguments(

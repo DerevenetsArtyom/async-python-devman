@@ -1,8 +1,8 @@
 import asyncio
 import tkinter as tk
 from enum import Enum
-from tkinter.scrolledtext import ScrolledText
 from tkinter import simpledialog
+from tkinter.scrolledtext import ScrolledText
 
 from utils.general import create_handy_nursery
 
@@ -45,7 +45,7 @@ def msg_box(title, msg):
     return answer
 
 
-async def update_tk(root_frame, interval=1/120):
+async def update_tk(root_frame, interval=1 / 120):
     while True:
         try:
             root_frame.update()
@@ -149,4 +149,3 @@ async def draw(messages_queue, sending_queue, status_updates_queue):
         nursery.start_soon(
             update_status_panel(status_labels, status_updates_queue),
         )
-

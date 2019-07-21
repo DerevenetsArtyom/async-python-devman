@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 
 from dotenv import set_key, find_dotenv
 
+main_logger = logging.getLogger('main_logger')
+
 
 @asynccontextmanager
 async def get_connection(host, port, status_updates_queue, state):
@@ -24,8 +26,8 @@ async def connect(server):
             return reader, writer
 
         except (ConnectionRefusedError, ConnectionResetError) as e:
-            logging.info(e)
-            logging.info("Connection error, retrying in 5 seconds...")
+            main_logger.info(e)
+            main_logger.info("Connection error, retrying in 5 seconds...")
 
             await asyncio.sleep(5)
 
@@ -38,10 +40,11 @@ async def submit_message(reader, writer, message):
     message = '{}\n\n'.format(sanitize(message))
     writer.write(message.encode())
     await writer.drain()
-    logging.info('submit_message: Sent message: {}'.format(sanitize(message)))
+    main_logger.info(
+        'submit_message: Sent message: {}'.format(sanitize(message)))
 
     data = await reader.readline()
-    logging.info('submit_message: Received: {}'.format(data.decode()))
+    main_logger.info('submit_message: Received: {}'.format(data.decode()))
 
 
 async def authorise(reader, writer, token):
@@ -53,16 +56,16 @@ async def authorise(reader, writer, token):
 
     response = json.loads(data.decode())
     if not response:
-        logging.info("authorise: Invalid token: {}".format(token))
+        main_logger.info("authorise: Invalid token: {}".format(token))
         return False, None
 
     data = await reader.readline()
-    logging.info('authorise: Received: {}'.format(data.decode()))
+    main_logger.info('authorise: Received: {}'.format(data.decode()))
     return True, response["nickname"]
 
 
 async def register(reader, writer, username):
-    logging.info('Register: Try username {}'.format(username))
+    main_logger.info('Register: Try username {}'.format(username))
 
     writer.write('\n'.encode())
     await writer.drain()
@@ -78,7 +81,7 @@ async def register(reader, writer, username):
     response = json.loads(data.decode())
     set_key(find_dotenv(), 'TOKEN', response['account_hash'])
 
-    logging.info('Register: Username "{}" registered with token {}'.format(
+    main_logger.info('Register: Username "{}" registered with token {}'.format(
         sanitize(username),
         response['account_hash']
     ))

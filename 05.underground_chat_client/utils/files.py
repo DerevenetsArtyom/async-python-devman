@@ -4,6 +4,8 @@ import os
 
 import aiofiles
 
+main_logger = logging.getLogger('main_logger')
+
 
 async def save_messages_to_file(filepath, logging_queue):
     """Wait until 'logging_queue' has any message and write it to log file"""
@@ -14,12 +16,12 @@ async def save_messages_to_file(filepath, logging_queue):
 
 
 async def log_to_file(message, file):
-    now = datetime.datetime.now()
-    timestamp = now.strftime("%Y.%m.%d %H:%M")
+    timestamp = datetime.datetime.now().strftime("%Y.%m.%d %H:%M")
 
     log = f'[{timestamp}] {message}'
     await file.write(log)
-    logging.info(message)
+
+    main_logger.info(message.strip())
 
 
 async def load_from_log_file(history, messages_queue):
