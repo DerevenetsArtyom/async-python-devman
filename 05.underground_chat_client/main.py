@@ -24,8 +24,6 @@ main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
 
 
-# TODO: add all queues to single dict
-
 async def ping_pong(reader, writer, watchdog_queue):
     while True:
         try:
@@ -42,45 +40,44 @@ async def ping_pong(reader, writer, watchdog_queue):
             raise ConnectionError('socket.gaierror (no internet connection)')
 
 
-async def send_messages(sending_queue, statuses_queue,
-                        watchdog_queue, reader, writer):
+async def send_messages(reader, writer, queues):
     """
     Listen 'sending_queue' and submit messages when present.
     Assume that authentication / registration was done before executing that.
     """
-    statuses_queue.put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
+    queues['statuses'].put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
 
     while True:
-        message = await sending_queue.get()
+        message = await queues['sending'].get()
         await submit_message(reader, writer, message)
-        watchdog_queue.put_nowait('Connection is alive. Message sent')
+        queues['watchdog'].put_nowait('Connection is alive. Message sent')
 
 
-async def read_messages(host, read_port, history, messages_queue,
-                        logging_queue, statuses_queue, watchdog_queue):
+async def read_messages(host, read_port, history, queues):
     """
-    Read messages from the remote server and put it into 'messages_queue'
+    Read messages from the remote server and put it into 'queues['messages']'
     to be displayed in GUI afterwards.
     Also put messages into 'logging_queue' to save it to the log file.
     If there are any messages already in the log file - display it first in GUI.
     """
 
-    messages_queue.put_nowait('** LOADING MESSAGE HISTORY.... **')
-    await load_from_log_file(history, messages_queue)
-    messages_queue.put_nowait('** HISTORY IS SHOWN ABOVE **\n')
+    queues['messages'].put_nowait('** LOADING MESSAGE HISTORY.... **')
+    await load_from_log_file(history, queues['messages'])
+    queues['messages'].put_nowait('** HISTORY IS SHOWN ABOVE **\n')
 
-    statuses_queue.put_nowait(gui.ReadConnectionStateChanged.INITIATED)
+    queues['statuses'].put_nowait(gui.ReadConnectionStateChanged.INITIATED)
 
-    async with get_connection(host, read_port, statuses_queue,
+    async with get_connection(host, read_port, queues['statuses'],
                               gui.ReadConnectionStateChanged) as (reader, _):
-        statuses_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
+        queues['statuses'].put_nowait(
+            gui.ReadConnectionStateChanged.ESTABLISHED)
 
         while True:
             data = await reader.readline()
             message = data.decode()
-            messages_queue.put_nowait(message.strip())
-            logging_queue.put_nowait(message)
-            watchdog_queue.put_nowait(
+            queues['messages'].put_nowait(message.strip())
+            queues['logging'].put_nowait(message)
+            queues['watchdog'].put_nowait(
                 'Connection is alive. New message in chat')
 
 
@@ -96,18 +93,19 @@ async def watch_for_connection(watchdog_queue):
             raise ConnectionError()
 
 
-async def handle_connection(host, read_port, write_port, history, token,
-                            messages_queue, sending_queue, statuses_queue,
-                            logging_queue, watchdog_queue):
+async def handle_connection(host, ports, history, token, queues):
+    read_port, write_port = ports
     while True:
         async with get_connection(
-                host, write_port, statuses_queue,
+                host, write_port, queues['statuses'],
                 gui.ReadConnectionStateChanged) as (reader, writer):
 
-            statuses_queue.put_nowait(gui.ReadConnectionStateChanged.INITIATED)
+            queues['statuses'].put_nowait(
+                gui.ReadConnectionStateChanged.INITIATED)
 
             await reader.readline()
-            watchdog_queue.put_nowait('Connection is alive. Prompt before auth')
+            queues['watchdog'].put_nowait(
+                'Connection is alive. Prompt before auth')
 
             token_is_valid, username = await authorise(reader, writer, token)
             if token_is_valid:
@@ -115,7 +113,7 @@ async def handle_connection(host, read_port, write_port, history, token,
                 # without explicit token for next requests
                 os.environ["TOKEN"] = token
 
-                watchdog_queue.put_nowait(
+                queues['watchdog'].put_nowait(
                     'Connection is alive. Authorization done')
 
             else:
@@ -133,7 +131,6 @@ async def handle_connection(host, read_port, write_port, history, token,
                         "You entered empty 'username'. This is not allowed."
                         "Program is going to terminate."
                     )
-
                     raise UserInterrupt()
 
                 if username is None:
@@ -143,26 +140,20 @@ async def handle_connection(host, read_port, write_port, history, token,
                 await register(reader, writer, username)
 
             # Show received username in GUI
-            statuses_queue.put_nowait(gui.NicknameReceived(username))
+            queues['statuses'].put_nowait(gui.NicknameReceived(username))
 
             async with create_handy_nursery() as nursery:
                 nursery.start_soon(
-                    read_messages(
-                        host, read_port, history, messages_queue,
-                        logging_queue, statuses_queue, watchdog_queue
-                    )
+                    read_messages(host, read_port, history, queues)
                 )
+
+                nursery.start_soon(send_messages(reader, writer, queues))
+
+                nursery.start_soon(watch_for_connection(queues['watchdog']))
 
                 nursery.start_soon(
-                    send_messages(
-                        sending_queue, statuses_queue,
-                        watchdog_queue, reader, writer
-                    )
+                    ping_pong(reader, writer, queues['watchdog'])
                 )
-
-                nursery.start_soon(watch_for_connection(watchdog_queue))
-
-                nursery.start_soon(ping_pong(reader, writer, watchdog_queue))
 
             # break the infinite loop to make possible to catch exceptions
             return
@@ -204,7 +195,6 @@ async def main():
         os.getenv('SERVER_WRITE_PORT'),
         os.getenv('TOKEN'),
         os.getenv('HISTORY'),
-        # os.getenv('USERNAME'),
     )
 
     # Queues must be created inside the loop.
@@ -212,28 +202,30 @@ async def main():
     # so they use events.get_event_loop().
     # asyncio.run() creates a new loop, and futures created for the queue
     # in one loop can't then be used in the other.
-    messages_queue = asyncio.Queue()
-    sending_queue = asyncio.Queue()
-    statuses_queue = asyncio.Queue()
+    queues = dict()
+    queues['messages'] = asyncio.Queue()
+    queues['sending'] = asyncio.Queue()
+    queues['statuses'] = asyncio.Queue()
 
-    logging_queue = asyncio.Queue()  # use to write incoming messages to file
-    watchdog_queue = asyncio.Queue()  # use to track server connection
+    queues['logging'] = asyncio.Queue()  # write incoming messages to file
+    queues['watchdog'] = asyncio.Queue()  # track server connection
 
+    ports = (read_port, write_port)
     try:
         async with create_handy_nursery() as nursery:
             nursery.start_soon(
-                gui.draw(messages_queue, sending_queue, statuses_queue)
-            )
-
-            nursery.start_soon(
-                handle_connection(
-                    host, read_port, write_port, history, token,
-                    messages_queue, sending_queue, statuses_queue,
-                    logging_queue, watchdog_queue,
+                gui.draw(
+                    queues['messages'], queues['sending'], queues['statuses']
                 )
             )
 
-            nursery.start_soon(save_messages_to_file(history, logging_queue))
+            nursery.start_soon(
+                handle_connection(host, ports, history, token, queues)
+            )
+
+            nursery.start_soon(
+                save_messages_to_file(history, queues['logging'])
+            )
 
     except aionursery.MultiError as e:
         print('#### aionursery.MultiError')
@@ -244,5 +236,4 @@ if __name__ == '__main__':
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, ConnectionError, gui.TkAppClosed, UserInterrupt):
-        print('******************** KeyboardInterrupt, gui.TkAppClosed')
         exit()

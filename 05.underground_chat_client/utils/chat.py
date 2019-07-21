@@ -22,20 +22,6 @@ async def get_connection(host, port, status_updates_queue, state):
         writer.close()
 
 
-async def connect(server):
-    """Set up re-connection for client"""
-    while True:
-        try:
-            reader, writer = await asyncio.open_connection(*server)
-            return reader, writer
-
-        except (ConnectionRefusedError, ConnectionResetError) as e:
-            main_logger.info(e)
-            main_logger.info("Connection error, retrying in 5 seconds...")
-
-            await asyncio.sleep(5)
-
-
 def sanitize(message):
     return message.replace('\n', '').replace('\r', '')
 
