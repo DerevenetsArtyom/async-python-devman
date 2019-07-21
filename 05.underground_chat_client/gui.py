@@ -2,6 +2,7 @@ import asyncio
 import tkinter as tk
 from enum import Enum
 from tkinter.scrolledtext import ScrolledText
+from tkinter import simpledialog
 
 from utils.general import create_handy_nursery
 
@@ -37,6 +38,11 @@ def process_new_message(input_field, sending_queue):
     text = input_field.get()
     sending_queue.put_nowait(text)
     input_field.delete(0, tk.END)
+
+
+def msg_box(title, msg):
+    answer = simpledialog.askstring(title, msg)
+    return answer
 
 
 async def update_tk(root_frame, interval=1/120):
