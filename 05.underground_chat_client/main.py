@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 import gui
 from loggers import setup_logger
-from utils.chat import submit_message, authorise, InvalidTokenException
+from utils.chat import submit_message, register, authorise
 from utils.files import load_from_log_file, save_messages_to_file
 from utils.general import create_handy_nursery
 
@@ -32,6 +32,10 @@ async def get_connection(host, port, status_updates_queue, state):
 
 async def send_messages(sending_queue, status_updates_queue,
                         watchdog_queue, reader, writer):
+    """
+    Listen 'sending_queue' and submit messages when present.
+    Assume that authentication / registration was done before executing that.
+    """
     status_updates_queue.put_nowait(
         gui.SendingConnectionStateChanged.ESTABLISHED)
 
@@ -79,13 +83,46 @@ async def watch_for_connection(watchdog_queue):
             raise ConnectionError()
 
 
-# TODO декоратор reconnect, если у вас такой есть в старом коде
 async def handle_connection(host, read_port, write_port, history, token,
                             messages_queue, sending_queue, status_updates_queue,
                             logging_queue, watchdog_queue):
+    send_connection_state = gui.SendingConnectionStateChanged
+
     while True:
-        async with create_handy_nursery() as nursery:
-            try:
+
+        async with get_connection(
+                host, write_port, status_updates_queue,
+                send_connection_state) as (reader, writer):
+
+            status_updates_queue.put_nowait(send_connection_state.INITIATED)
+
+            watchdog_queue.put_nowait('Connection is alive. Prompt before auth')
+
+            await reader.readline()
+            token_is_valid, username = await authorise(reader, writer, token)
+            if token_is_valid:
+                # Override token in env to be able to send messages
+                # without explicit token for next requests
+                os.environ["TOKEN"] = token
+
+                watchdog_queue.put_nowait('Connection is alive. Authorization done')
+
+            else:
+                username = gui.msg_box(
+                    'Invalid token',
+                    'If you\'re registered user, please'
+                    ' click "Cancel" and check your .env file.\n If you\'re'
+                    ' the new one, enter yor name below and click "OK"')
+
+                if username is None:
+                    print("raise UserInterrupt('User Interrupt')")
+
+                await register(reader, writer, username)
+
+            # Show received username in GUI
+            status_updates_queue.put_nowait(gui.NicknameReceived(username))
+
+            async with create_handy_nursery() as nursery:
                 nursery.start_soon(
                     read_messages(
                         host, read_port, history, messages_queue,
@@ -95,21 +132,15 @@ async def handle_connection(host, read_port, write_port, history, token,
 
                 nursery.start_soon(
                     send_messages(
-                        host, write_port, token, sending_queue,
-                        status_updates_queue, watchdog_queue
+                        sending_queue, status_updates_queue,
+                        watchdog_queue, reader, writer
                     )
                 )
 
                 nursery.start_soon(watch_for_connection(watchdog_queue))
 
-            except aionursery.MultiError as e:
-                # TODO: that doesn't catch the exception.'read_messages' hangs
-                print('#### aionursery.MultiError')
-                print(e.exceptions)
-            except Exception as e:
-                print('#### Exception', e)
-            else:
-                print('#### handle_connection else part')
+            # break the infinite loop to make possible to catch exeptions
+            return
 
 
 def get_arguments(host, read_port, write_port, token, history):
@@ -140,6 +171,7 @@ async def main():
     setup_logger(
         'watchdog_logger', fmt='[%(asctime)s] %(message)s', datefmt='%s'
     )
+    setup_logger('')
 
     load_dotenv()
     host, read_port, write_port, token, history = get_arguments(
@@ -179,21 +211,15 @@ async def main():
 
             nursery.start_soon(save_messages_to_file(history, logging_queue))
 
-    except InvalidTokenException:
-        # TODO: #11: this actually doesn't work, program doesn't stop gracefully
-        print('#### InvalidTokenException')
-        return
-
-    # TODO: #10: add graceful shutdown: KeyboardInterrupt, gui.TkAppClosed
-    except (KeyboardInterrupt, gui.TkAppClosed):
-        print('******************** KeyboardInterrupt, gui.TkAppClosed')
-        # exit()
+    except aionursery.MultiError as e:
+        # TODO: that doesn't catch the exception.'read_messages' hangs
+        print('#### aionursery.MultiError')
+        print(e.exceptions)
 
 
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, gui.TkAppClosed):
-        print('#### exit')
+        print('******************** KeyboardInterrupt, gui.TkAppClosed')
         exit()
-
