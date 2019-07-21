@@ -27,6 +27,8 @@ watchdog_logger = logging.getLogger('watchdog_logger')
 # TODO: 18 - Сделайте интерфейс регистрации - https://dvmn.org/modules/async-python/lesson/anonymous-chat-client/#18
 
 
+# TODO: add all queues to single dict
+
 async def ping_pong(reader, writer, watchdog_queue):
     while True:
         try:
@@ -60,22 +62,21 @@ async def send_messages(sending_queue, statuses_queue,
 async def read_messages(host, read_port, history, messages_queue,
                         logging_queue, statuses_queue, watchdog_queue):
     """
-    Read messages from the remote server and put it
-    in 'messages_queue' to be displayed in GUI afterwards.
-    Also put messages in 'logging_queue' to save it to log file.
-    If there is any messages already in the log file - display it first in GUI.
+    Read messages from the remote server and put it into 'messages_queue'
+    to be displayed in GUI afterwards.
+    Also put messages into 'logging_queue' to save it to the log file.
+    If there are any messages already in the log file - display it first in GUI.
     """
-    read_connection_state = gui.ReadConnectionStateChanged
 
     messages_queue.put_nowait('** LOADING MESSAGE HISTORY.... **')
     await load_from_log_file(history, messages_queue)
     messages_queue.put_nowait('** HISTORY IS SHOWN ABOVE **\n')
 
-    statuses_queue.put_nowait(read_connection_state.INITIATED)
+    statuses_queue.put_nowait(gui.ReadConnectionStateChanged.INITIATED)
 
     async with get_connection(host, read_port, statuses_queue,
-                              read_connection_state) as (reader, _):
-        statuses_queue.put_nowait(read_connection_state.ESTABLISHED)
+                              gui.ReadConnectionStateChanged) as (reader, _):
+        statuses_queue.put_nowait(gui.ReadConnectionStateChanged.ESTABLISHED)
 
         while True:
             data = await reader.readline()
@@ -101,18 +102,16 @@ async def watch_for_connection(watchdog_queue):
 async def handle_connection(host, read_port, write_port, history, token,
                             messages_queue, sending_queue, statuses_queue,
                             logging_queue, watchdog_queue):
-    send_connection_state = gui.SendingConnectionStateChanged
-
     while True:
+        async with get_connection(
+                host, write_port, statuses_queue,
+                gui.ReadConnectionStateChanged) as (reader, writer):
 
-        async with get_connection(host, write_port, statuses_queue,
-                                  send_connection_state) as (reader, writer):
-
-            statuses_queue.put_nowait(send_connection_state.INITIATED)
-
-            watchdog_queue.put_nowait('Connection is alive. Prompt before auth')
+            statuses_queue.put_nowait(gui.ReadConnectionStateChanged.INITIATED)
 
             await reader.readline()
+            watchdog_queue.put_nowait('Connection is alive. Prompt before auth')
+
             token_is_valid, username = await authorise(reader, writer, token)
             if token_is_valid:
                 # Override token in env to be able to send messages
@@ -125,9 +124,9 @@ async def handle_connection(host, read_port, write_port, history, token,
             else:
                 username = gui.msg_box(
                     'Invalid token',
-                    'If you\'re registered user, please'
-                    ' click "Cancel" and check your .env file.\n If you\'re'
-                    ' the new one, enter yor name below and click "OK"')
+                    'If you\'re registered user, please '
+                    'click "Cancel" and check your .env file.\n If you\'re '
+                    'the new one, enter yor name below and click "OK"')
 
                 if username is None:
                     print("raise UserInterrupt('User Interrupt')")
@@ -228,7 +227,6 @@ async def main():
             nursery.start_soon(save_messages_to_file(history, logging_queue))
 
     except aionursery.MultiError as e:
-        # TODO: that doesn't catch the exception.'read_messages' hangs
         print('#### aionursery.MultiError')
         print(e.exceptions)
 
