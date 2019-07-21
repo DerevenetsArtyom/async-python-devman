@@ -8,6 +8,10 @@ from dotenv import set_key, find_dotenv
 main_logger = logging.getLogger('main_logger')
 
 
+class UserInterrupt(Exception):
+    pass
+
+
 @asynccontextmanager
 async def get_connection(host, port, status_updates_queue, state):
     reader, writer = await asyncio.open_connection(host, port)
@@ -60,12 +64,12 @@ async def authorise(reader, writer, token):
         return False, None
 
     data = await reader.readline()
-    main_logger.info('authorise: Received: {}'.format(data.decode()))
+    main_logger.info('uthorise: Received: {}'.format(data.decode()))
     return True, response["nickname"]
 
 
 async def register(reader, writer, username):
-    main_logger.info('Register: Try username {}'.format(username))
+    main_logger.info('register: Try username {}'.format(username))
 
     writer.write('\n'.encode())
     await writer.drain()
@@ -81,7 +85,7 @@ async def register(reader, writer, username):
     response = json.loads(data.decode())
     set_key(find_dotenv(), 'TOKEN', response['account_hash'])
 
-    main_logger.info('Register: Username "{}" registered with token {}'.format(
+    main_logger.info('register: Username "{}" registered with token {}'.format(
         sanitize(username),
         response['account_hash']
     ))

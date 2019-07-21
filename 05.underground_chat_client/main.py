@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import socket
+from tkinter import messagebox
 
 import aionursery
 from async_timeout import timeout
@@ -10,7 +11,8 @@ from dotenv import load_dotenv
 
 import gui
 from loggers import setup_logger
-from utils.chat import submit_message, register, authorise, get_connection
+from utils.chat import (submit_message, register,
+                        authorise, get_connection, UserInterrupt)
 from utils.files import load_from_log_file, save_messages_to_file
 from utils.general import create_handy_nursery
 
@@ -22,7 +24,6 @@ main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
 
 
-# TODO: 11 - Проверьте токен                - https://dvmn.org/modules/async-python/lesson/anonymous-chat-client/#11
 # TODO: 15 - Научитесь закрывать соединение - https://dvmn.org/modules/async-python/lesson/anonymous-chat-client/#15
 # TODO: 18 - Сделайте интерфейс регистрации - https://dvmn.org/modules/async-python/lesson/anonymous-chat-client/#18
 
@@ -128,8 +129,20 @@ async def handle_connection(host, read_port, write_port, history, token,
                     'click "Cancel" and check your .env file.\n If you\'re '
                     'the new one, enter yor name below and click "OK"')
 
+                if username == "":
+                    main_logger.info("User left 'username' empty")
+
+                    messagebox.showinfo(
+                        "Invalid username",
+                        "You entered empty 'username'. This is not allowed."
+                        "Program is going to terminate."
+                    )
+
+                    raise UserInterrupt()
+
                 if username is None:
-                    print("raise UserInterrupt('User Interrupt')")
+                    main_logger.info("User canceled 'username' input")
+                    raise UserInterrupt()
 
                 await register(reader, writer, username)
 
@@ -234,6 +247,6 @@ async def main():
 if __name__ == '__main__':
     try:
         asyncio.run(main())
-    except (KeyboardInterrupt, gui.TkAppClosed):
+    except (KeyboardInterrupt, gui.TkAppClosed, UserInterrupt):
         print('******************** KeyboardInterrupt, gui.TkAppClosed')
         exit()
