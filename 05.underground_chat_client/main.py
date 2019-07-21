@@ -22,6 +22,11 @@ main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
 
 
+# TODO: 11 - Проверьте токен                - https://dvmn.org/modules/async-python/lesson/anonymous-chat-client/#11
+# TODO: 15 - Научитесь закрывать соединение - https://dvmn.org/modules/async-python/lesson/anonymous-chat-client/#15
+# TODO: 18 - Сделайте интерфейс регистрации - https://dvmn.org/modules/async-python/lesson/anonymous-chat-client/#18
+
+
 async def ping_pong(reader, writer, watchdog_queue):
     while True:
         try:
@@ -38,14 +43,13 @@ async def ping_pong(reader, writer, watchdog_queue):
             raise ConnectionError('socket.gaierror (no internet connection)')
 
 
-async def send_messages(sending_queue, status_updates_queue,
+async def send_messages(sending_queue, statuses_queue,
                         watchdog_queue, reader, writer):
     """
     Listen 'sending_queue' and submit messages when present.
     Assume that authentication / registration was done before executing that.
     """
-    status_updates_queue.put_nowait(
-        gui.SendingConnectionStateChanged.ESTABLISHED)
+    statuses_queue.put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
 
     while True:
         message = await sending_queue.get()
@@ -53,8 +57,8 @@ async def send_messages(sending_queue, status_updates_queue,
         watchdog_queue.put_nowait('Connection is alive. Message sent')
 
 
-async def read_messages(host, read_port, history, messages_queue, logging_queue,
-                        status_updates_queue, watchdog_queue):
+async def read_messages(host, read_port, history, messages_queue,
+                        logging_queue, statuses_queue, watchdog_queue):
     """
     Read messages from the remote server and put it
     in 'messages_queue' to be displayed in GUI afterwards.
@@ -67,11 +71,11 @@ async def read_messages(host, read_port, history, messages_queue, logging_queue,
     await load_from_log_file(history, messages_queue)
     messages_queue.put_nowait('** HISTORY IS SHOWN ABOVE **\n')
 
-    status_updates_queue.put_nowait(read_connection_state.INITIATED)
+    statuses_queue.put_nowait(read_connection_state.INITIATED)
 
-    async with get_connection(host, read_port, status_updates_queue,
+    async with get_connection(host, read_port, statuses_queue,
                               read_connection_state) as (reader, _):
-        status_updates_queue.put_nowait(read_connection_state.ESTABLISHED)
+        statuses_queue.put_nowait(read_connection_state.ESTABLISHED)
 
         while True:
             data = await reader.readline()
@@ -83,7 +87,7 @@ async def read_messages(host, read_port, history, messages_queue, logging_queue,
 
 
 async def watch_for_connection(watchdog_queue):
-    """Timer to monitor network connection by checking time between packages"""
+    """ Timer to monitor network connection by checking time between packages"""
     while True:
         try:
             async with timeout(WATCH_CONNECTION_TIMEOUT):
@@ -95,17 +99,16 @@ async def watch_for_connection(watchdog_queue):
 
 
 async def handle_connection(host, read_port, write_port, history, token,
-                            messages_queue, sending_queue, status_updates_queue,
+                            messages_queue, sending_queue, statuses_queue,
                             logging_queue, watchdog_queue):
     send_connection_state = gui.SendingConnectionStateChanged
 
     while True:
 
-        async with get_connection(
-                host, write_port, status_updates_queue,
-                send_connection_state) as (reader, writer):
+        async with get_connection(host, write_port, statuses_queue,
+                                  send_connection_state) as (reader, writer):
 
-            status_updates_queue.put_nowait(send_connection_state.INITIATED)
+            statuses_queue.put_nowait(send_connection_state.INITIATED)
 
             watchdog_queue.put_nowait('Connection is alive. Prompt before auth')
 
@@ -132,24 +135,25 @@ async def handle_connection(host, read_port, write_port, history, token,
                 await register(reader, writer, username)
 
             # Show received username in GUI
-            status_updates_queue.put_nowait(gui.NicknameReceived(username))
+            statuses_queue.put_nowait(gui.NicknameReceived(username))
 
             async with create_handy_nursery() as nursery:
                 nursery.start_soon(
                     read_messages(
                         host, read_port, history, messages_queue,
-                        logging_queue, status_updates_queue, watchdog_queue
+                        logging_queue, statuses_queue, watchdog_queue
                     )
                 )
 
                 nursery.start_soon(
                     send_messages(
-                        sending_queue, status_updates_queue,
+                        sending_queue, statuses_queue,
                         watchdog_queue, reader, writer
                     )
                 )
 
                 nursery.start_soon(watch_for_connection(watchdog_queue))
+
                 nursery.start_soon(ping_pong(reader, writer, watchdog_queue))
 
             # break the infinite loop to make possible to catch exceptions
@@ -202,7 +206,7 @@ async def main():
     # in one loop can't then be used in the other.
     messages_queue = asyncio.Queue()
     sending_queue = asyncio.Queue()
-    status_updates_queue = asyncio.Queue()
+    statuses_queue = asyncio.Queue()
 
     logging_queue = asyncio.Queue()  # use to write incoming messages to file
     watchdog_queue = asyncio.Queue()  # use to track server connection
@@ -210,13 +214,13 @@ async def main():
     try:
         async with create_handy_nursery() as nursery:
             nursery.start_soon(
-                gui.draw(messages_queue, sending_queue, status_updates_queue)
+                gui.draw(messages_queue, sending_queue, statuses_queue)
             )
 
             nursery.start_soon(
                 handle_connection(
                     host, read_port, write_port, history, token,
-                    messages_queue, sending_queue, status_updates_queue,
+                    messages_queue, sending_queue, statuses_queue,
                     logging_queue, watchdog_queue,
                 )
             )
