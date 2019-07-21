@@ -2,6 +2,8 @@ import asyncio
 import json
 import logging
 
+from dotenv import set_key, find_dotenv
+
 
 class InvalidTokenException(Exception):
     pass
@@ -44,9 +46,34 @@ async def authorise(reader, writer, token):
 
     response = json.loads(data.decode())
     if not response:
-        logging.info("Invalid token: {}".format(token))
-        return False, _
+        logging.info("authorise: Invalid token: {}".format(token))
+        return False, None
 
     data = await reader.readline()
     logging.info('authorise: Received: {}'.format(data.decode()))
     return True, response["nickname"]
+
+
+async def register(reader, writer, username):
+    logging.info('Register: Try username {}'.format(username))
+
+    writer.write('\n'.encode())
+    await writer.drain()
+
+    await reader.readline()
+
+    message = '{}\n'.format(sanitize(username))
+    writer.write(message.encode())
+    await writer.drain()
+
+    data = await reader.readline()
+
+    response = json.loads(data.decode())
+    set_key(find_dotenv(), 'TOKEN', response['account_hash'])
+
+    logging.info('Register: Username "{}" registered with token {}'.format(
+        sanitize(username),
+        response['account_hash']
+    ))
+
+    await reader.readline()
