@@ -1,12 +1,19 @@
 import asyncio
 import json
 import logging
+from contextlib import asynccontextmanager
 
 from dotenv import set_key, find_dotenv
 
 
-class InvalidTokenException(Exception):
-    pass
+@asynccontextmanager
+async def get_connection(host, port, status_updates_queue, state):
+    reader, writer = await asyncio.open_connection(host, port)
+    try:
+        yield (reader, writer)
+    finally:
+        status_updates_queue.put_nowait(state.CLOSED)
+        writer.close()
 
 
 async def connect(server):

@@ -3,7 +3,6 @@ import asyncio
 import logging
 import os
 import socket
-from contextlib import asynccontextmanager
 
 import aionursery
 from async_timeout import timeout
@@ -11,26 +10,16 @@ from dotenv import load_dotenv
 
 import gui
 from loggers import setup_logger
-from utils.chat import submit_message, register, authorise
+from utils.chat import submit_message, register, authorise, get_connection
 from utils.files import load_from_log_file, save_messages_to_file
 from utils.general import create_handy_nursery
 
-WATCH_CONNECTION_TIMEOUT = 20
+WATCH_CONNECTION_TIMEOUT = 20  # TODO: change that
 PING_PONG_TIMEOUT = 30
 DELAY_BETWEEN_PING_PONG = 5
 
 main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
-
-
-@asynccontextmanager
-async def get_connection(host, port, status_updates_queue, state):
-    reader, writer = await asyncio.open_connection(host, port)
-    try:
-        yield (reader, writer)
-    finally:
-        status_updates_queue.put_nowait(state.CLOSED)
-        writer.close()
 
 
 async def ping_pong(reader, writer, watchdog_queue):
@@ -89,7 +78,8 @@ async def read_messages(host, read_port, history, messages_queue, logging_queue,
             message = data.decode()
             messages_queue.put_nowait(message.strip())
             logging_queue.put_nowait(message)
-            watchdog_queue.put_nowait('Connection is alive.New message in chat')
+            watchdog_queue.put_nowait(
+                'Connection is alive. New message in chat')
 
 
 async def watch_for_connection(watchdog_queue):
@@ -126,7 +116,8 @@ async def handle_connection(host, read_port, write_port, history, token,
                 # without explicit token for next requests
                 os.environ["TOKEN"] = token
 
-                watchdog_queue.put_nowait('Connection is alive. Authorization done')
+                watchdog_queue.put_nowait(
+                    'Connection is alive. Authorization done')
 
             else:
                 username = gui.msg_box(
