@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import os
+import socket
 from contextlib import asynccontextmanager
 
 import aionursery
@@ -15,6 +16,8 @@ from utils.files import load_from_log_file, save_messages_to_file
 from utils.general import create_handy_nursery
 
 WATCH_CONNECTION_TIMEOUT = 20
+PING_PONG_TIMEOUT = 30
+DELAY_BETWEEN_PING_PONG = 5
 
 main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
@@ -28,6 +31,22 @@ async def get_connection(host, port, status_updates_queue, state):
     finally:
         status_updates_queue.put_nowait(state.CLOSED)
         writer.close()
+
+
+async def ping_pong(reader, writer, watchdog_queue):
+    while True:
+        try:
+            async with timeout(PING_PONG_TIMEOUT):
+                writer.write('\n'.encode())
+                await writer.drain()
+
+                await reader.readline()
+            await asyncio.sleep(DELAY_BETWEEN_PING_PONG)
+            watchdog_queue.put_nowait('Connection is alive. Ping message sent')
+
+        except socket.gaierror:
+            watchdog_queue.put_nowait('socket.gaierror')
+            raise ConnectionError('socket.gaierror (no internet connection)')
 
 
 async def send_messages(sending_queue, status_updates_queue,
@@ -55,7 +74,9 @@ async def read_messages(host, read_port, history, messages_queue, logging_queue,
     """
     read_connection_state = gui.ReadConnectionStateChanged
 
+    messages_queue.put_nowait('** LOADING MESSAGE HISTORY.... **')
     await load_from_log_file(history, messages_queue)
+    messages_queue.put_nowait('** HISTORY IS SHOWN ABOVE **\n')
 
     status_updates_queue.put_nowait(read_connection_state.INITIATED)
 
@@ -138,6 +159,7 @@ async def handle_connection(host, read_port, write_port, history, token,
                 )
 
                 nursery.start_soon(watch_for_connection(watchdog_queue))
+                nursery.start_soon(ping_pong(reader, writer, watchdog_queue))
 
             # break the infinite loop to make possible to catch exeptions
             return
