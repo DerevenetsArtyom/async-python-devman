@@ -16,16 +16,12 @@ from utils.chat import (submit_message, register,
 from utils.files import load_from_log_file, save_messages_to_file
 from utils.general import create_handy_nursery
 
-WATCH_CONNECTION_TIMEOUT = 20  # TODO: change that
+WATCH_CONNECTION_TIMEOUT = 5
 PING_PONG_TIMEOUT = 30
 DELAY_BETWEEN_PING_PONG = 5
 
 main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')
-
-
-# TODO: 15 - Научитесь закрывать соединение - https://dvmn.org/modules/async-python/lesson/anonymous-chat-client/#15
-# TODO: 18 - Сделайте интерфейс регистрации - https://dvmn.org/modules/async-python/lesson/anonymous-chat-client/#18
 
 
 # TODO: add all queues to single dict
@@ -247,6 +243,6 @@ async def main():
 if __name__ == '__main__':
     try:
         asyncio.run(main())
-    except (KeyboardInterrupt, gui.TkAppClosed, UserInterrupt):
+    except (KeyboardInterrupt, ConnectionError, gui.TkAppClosed, UserInterrupt):
         print('******************** KeyboardInterrupt, gui.TkAppClosed')
         exit()
