@@ -30,11 +30,11 @@ async def submit_message(reader, writer, message):
     message = '{}\n\n'.format(sanitize(message))
     writer.write(message.encode())
     await writer.drain()
-    main_logger.info(
-        'submit_message: Sent message: {}'.format(sanitize(message)))
+    main_logger.info('submit_message: Sent message: {}'.format(message.strip()))
 
     data = await reader.readline()
-    main_logger.info('submit_message: Received: {}'.format(data.decode()))
+    text = data.decode().strip()
+    main_logger.info('submit_message: Received: {}'.format(text))
 
 
 async def authorise(reader, writer, token):
@@ -46,11 +46,11 @@ async def authorise(reader, writer, token):
 
     response = json.loads(data.decode())
     if not response:
-        main_logger.info("authorise: Invalid token: {}".format(token))
+        main_logger.info('authorise: Invalid token: {}'.format(token))
         return False, None
 
     data = await reader.readline()
-    main_logger.info('uthorise: Received: {}'.format(data.decode()))
+    main_logger.info('authorise: Received: {}'.format(data.decode()))
     return True, response["nickname"]
 
 
