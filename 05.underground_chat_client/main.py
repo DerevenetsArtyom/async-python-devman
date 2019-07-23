@@ -190,11 +190,11 @@ async def main():
 
     load_dotenv()
     host, read_port, write_port, token, history = get_arguments(
-        os.getenv('SERVER_HOST'),
-        os.getenv('SERVER_READ_PORT'),
-        os.getenv('SERVER_WRITE_PORT'),
-        os.getenv('TOKEN'),
-        os.getenv('HISTORY'),
+        os.getenv('MINECHAT_SERVER_HOST'),
+        os.getenv('MINECHAT_SERVER_READ_PORT'),
+        os.getenv('MINECHAT_SERVER_WRITE_PORT'),
+        os.getenv('MINECHAT_TOKEN'),
+        os.getenv('MINECHAT_HISTORY'),
     )
 
     # Queues must be created inside the loop.
