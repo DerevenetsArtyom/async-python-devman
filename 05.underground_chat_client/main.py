@@ -18,7 +18,7 @@ from utils.general import create_handy_nursery
 
 WATCH_CONNECTION_TIMEOUT = 5
 PING_PONG_TIMEOUT = 30
-DELAY_BETWEEN_PING_PONG = 5
+DELAY_BETWEEN_PING_PONG = 10
 
 main_logger = logging.getLogger('main_logger')
 watchdog_logger = logging.getLogger('watchdog_logger')

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import socket
 from contextlib import asynccontextmanager
 
 from dotenv import set_key, find_dotenv
@@ -12,9 +13,31 @@ class UserInterrupt(Exception):
     pass
 
 
+async def open_connection(host, port, max_attempts_in_row=3):
+    attempts = 0
+    reader = writer = None
+    while not reader:
+        try:
+            reader, writer = await asyncio.open_connection(host, port)
+        except (socket.gaierror, ConnectionRefusedError,
+                ConnectionResetError, ConnectionError):
+            if attempts < int(max_attempts_in_row):
+                msg = 'open_connection: No connection. Trying again...'
+                main_logger.info(msg)
+                attempts += 1
+            else:
+                msg = 'open_connection: No connection. Trying again in 3 sec...'
+                main_logger.info(msg)
+                await asyncio.sleep(3)
+            continue
+        else:
+            main_logger.info('open_connection: Connection established')
+    return reader, writer
+
+
 @asynccontextmanager
 async def get_connection(host, port, status_updates_queue, state):
-    reader, writer = await asyncio.open_connection(host, port)
+    reader, writer = await open_connection(host, port)
     try:
         yield (reader, writer)
     finally:
