@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 
 from dotenv import set_key, find_dotenv
 
+from gui import ReadConnectionStateChanged, SendingConnectionStateChanged
+
 main_logger = logging.getLogger('main_logger')
 
 
@@ -36,12 +38,22 @@ async def open_connection(host, port, max_attempts_in_row=3):
 
 
 @asynccontextmanager
-async def get_connection(host, port, status_updates_queue, state):
+async def get_connection(host, port, queues):
     reader, writer = await open_connection(host, port)
+
+    status_queue = queues['statuses']
+    status_queue.put_nowait(ReadConnectionStateChanged.INITIATED)
+    status_queue.put_nowait(SendingConnectionStateChanged.INITIATED)
+
     try:
+        status_queue.put_nowait(ReadConnectionStateChanged.ESTABLISHED)
+        status_queue.put_nowait(SendingConnectionStateChanged.ESTABLISHED)
+
         yield (reader, writer)
     finally:
-        status_updates_queue.put_nowait(state.CLOSED)
+        status_queue.put_nowait(ReadConnectionStateChanged.CLOSED)
+        status_queue.put_nowait(SendingConnectionStateChanged.CLOSED)
+
         writer.close()
 
 

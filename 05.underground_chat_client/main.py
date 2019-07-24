@@ -45,7 +45,6 @@ async def send_messages(reader, writer, queues):
     Listen 'sending_queue' and submit messages when present.
     Assume that authentication / registration was done before executing that.
     """
-    queues['statuses'].put_nowait(gui.SendingConnectionStateChanged.ESTABLISHED)
 
     while True:
         message = await queues['sending'].get()
@@ -65,13 +64,7 @@ async def read_messages(host, read_port, history, queues):
     await load_from_log_file(history, queues['messages'])
     queues['messages'].put_nowait('** HISTORY IS SHOWN ABOVE **\n')
 
-    queues['statuses'].put_nowait(gui.ReadConnectionStateChanged.INITIATED)
-
-    async with get_connection(host, read_port, queues['statuses'],
-                              gui.ReadConnectionStateChanged) as (reader, _):
-        queues['statuses'].put_nowait(
-            gui.ReadConnectionStateChanged.ESTABLISHED)
-
+    async with get_connection(host, read_port, queues) as (reader, _):
         while True:
             data = await reader.readline()
             message = data.decode()
@@ -96,12 +89,7 @@ async def watch_for_connection(watchdog_queue):
 async def handle_connection(host, ports, history, token, queues):
     read_port, write_port = ports
     while True:
-        async with get_connection(
-                host, write_port, queues['statuses'],
-                gui.ReadConnectionStateChanged) as (reader, writer):
-
-            queues['statuses'].put_nowait(
-                gui.ReadConnectionStateChanged.INITIATED)
+        async with get_connection(host, write_port, queues) as (reader, writer):
 
             await reader.readline()
             queues['watchdog'].put_nowait(
