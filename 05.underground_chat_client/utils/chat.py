@@ -33,7 +33,8 @@ async def open_connection(host, port, max_attempts_in_row=3):
                 await asyncio.sleep(3)
             continue
         else:
-            main_logger.info('open_connection: Connection established')
+            msg = 'open_connection: Connection established, port: ' + port
+            main_logger.info(msg)
     return reader, writer
 
 
@@ -73,6 +74,8 @@ async def submit_message(reader, writer, message):
 
 
 async def authorise(reader, writer, token):
+    await reader.readline()
+
     message = token + '\n'
     writer.write(message.encode())
     await writer.drain()

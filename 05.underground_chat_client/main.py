@@ -91,18 +91,11 @@ async def handle_connection(host, ports, history, token, queues):
     while True:
         async with get_connection(host, write_port, queues) as (reader, writer):
 
-            await reader.readline()
-            queues['watchdog'].put_nowait(
-                'Connection is alive. Prompt before auth')
-
             token_is_valid, username = await authorise(reader, writer, token)
             if token_is_valid:
                 # Override token in env to be able to send messages
                 # without explicit token for next requests
                 os.environ["TOKEN"] = token
-
-                queues['watchdog'].put_nowait(
-                    'Connection is alive. Authorization done')
 
             else:
                 username = gui.msg_box(
