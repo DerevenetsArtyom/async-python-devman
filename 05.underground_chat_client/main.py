@@ -36,8 +36,8 @@ async def ping_pong(reader, writer, watchdog_queue):
             watchdog_queue.put_nowait('Connection is alive. Ping message sent')
 
         except socket.gaierror:
-            watchdog_queue.put_nowait('socket.gaierror')
-            raise ConnectionError('socket.gaierror (no internet connection)')
+            watchdog_queue.put_nowait('socket.gaierror: no internet connection')
+            raise ConnectionError()
 
 
 async def send_messages(reader, writer, queues):
@@ -70,8 +70,7 @@ async def read_messages(host, read_port, history, queues):
             message = data.decode()
             queues['messages'].put_nowait(message.strip())
             queues['logging'].put_nowait(message)
-            queues['watchdog'].put_nowait(
-                'Connection is alive. New message in chat')
+            queues['watchdog'].put_nowait('Connection is alive. New message')
 
 
 async def watch_for_connection(watchdog_queue):
@@ -86,36 +85,35 @@ async def watch_for_connection(watchdog_queue):
             raise ConnectionError()
 
 
-# TODO: Если сетевое соединение оборвется в момент авторизации или регистрации
-#  пока не запущен watchdog, то программа подвиснет.
 async def handle_connection(host, ports, history, token, queues):
     read_port, write_port = ports
-    while True:
+    while True:  # infinite loop to reconnect when ConnectionError occurred
         try:
-            async with get_connection(host, write_port, queues) as (reader, writer):
+            async with get_connection(host, write_port, queues) as streams:
+                # set timeout for authorise/register procedure
+                async with timeout(WATCH_CONNECTION_TIMEOUT):
+                    token_is_valid, username = await authorise(*streams, token)
+                    if not token_is_valid:
+                        username = gui.msg_box(
+                            'Invalid token',
+                            'If you\'re registered user, please click '
+                            '"Cancel" and check your .env file.\nIf you are the'
+                            ' new one, enter yor name below and click "OK"')
 
-                token_is_valid, username = await authorise(reader, writer, token)
-                if not token_is_valid:
-                    username = gui.msg_box(
-                        'Invalid token',
-                        'If you\'re registered user, please '
-                        'click "Cancel" and check your .env file.\n If you\'re '
-                        'the new one, enter yor name below and click "OK"')
+                        if username == "":
+                            main_logger.info("User left 'username' empty")
+                            messagebox.showinfo(
+                                "Invalid username",
+                                "You entered empty 'username'. This is not "
+                                "allowed. Program is going to terminate."
+                            )
+                            raise UserInterrupt()
 
-                    if username == "":
-                        main_logger.info("User left 'username' empty")
-                        messagebox.showinfo(
-                            "Invalid username",
-                            "You entered empty 'username'. This is not allowed."
-                            "Program is going to terminate."
-                        )
-                        raise UserInterrupt()
+                        if username is None:
+                            main_logger.info("User canceled 'username' input")
+                            raise UserInterrupt()
 
-                    if username is None:
-                        main_logger.info("User canceled 'username' input")
-                        raise UserInterrupt()
-
-                    await register(reader, writer, username)
+                        await register(*streams, username)
 
                 # Show received username in GUI
                 queues['statuses'].put_nowait(gui.NicknameReceived(username))
@@ -125,19 +123,18 @@ async def handle_connection(host, ports, history, token, queues):
                         read_messages(host, read_port, history, queues)
                     )
 
-                    nursery.start_soon(send_messages(reader, writer, queues))
+                    nursery.start_soon(send_messages(*streams, queues))
 
                     nursery.start_soon(watch_for_connection(queues['watchdog']))
 
-                    nursery.start_soon(
-                        ping_pong(reader, writer, queues['watchdog'])
-                    )
+                    nursery.start_soon(ping_pong(*streams, queues['watchdog']))
 
-        except (socket.gaierror, ConnectionRefusedError,
-                ConnectionResetError, ConnectionError):
-            print('ConnectionError')
-            await asyncio.sleep(2)
+        except (ConnectionRefusedError, ConnectionResetError,
+                ConnectionError, asyncio.TimeoutError):
+            # allow auto reconnection when ConnectionError or TimeoutError
             continue
+        else:
+            break
 
 
 def get_arguments(host, read_port, write_port, token, history):
