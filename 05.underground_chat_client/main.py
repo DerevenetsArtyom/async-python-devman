@@ -86,58 +86,58 @@ async def watch_for_connection(watchdog_queue):
             raise ConnectionError()
 
 
+# TODO: Если сетевое соединение оборвется в момент авторизации или регистрации
+#  пока не запущен watchdog, то программа подвиснет.
 async def handle_connection(host, ports, history, token, queues):
     read_port, write_port = ports
     while True:
-        async with get_connection(host, write_port, queues) as (reader, writer):
+        try:
+            async with get_connection(host, write_port, queues) as (reader, writer):
 
-            token_is_valid, username = await authorise(reader, writer, token)
-            if token_is_valid:
-                # Override token in env to be able to send messages
-                # without explicit token for next requests
-                os.environ["TOKEN"] = token
+                token_is_valid, username = await authorise(reader, writer, token)
+                if not token_is_valid:
+                    username = gui.msg_box(
+                        'Invalid token',
+                        'If you\'re registered user, please '
+                        'click "Cancel" and check your .env file.\n If you\'re '
+                        'the new one, enter yor name below and click "OK"')
 
-            else:
-                username = gui.msg_box(
-                    'Invalid token',
-                    'If you\'re registered user, please '
-                    'click "Cancel" and check your .env file.\n If you\'re '
-                    'the new one, enter yor name below and click "OK"')
+                    if username == "":
+                        main_logger.info("User left 'username' empty")
+                        messagebox.showinfo(
+                            "Invalid username",
+                            "You entered empty 'username'. This is not allowed."
+                            "Program is going to terminate."
+                        )
+                        raise UserInterrupt()
 
-                if username == "":
-                    main_logger.info("User left 'username' empty")
+                    if username is None:
+                        main_logger.info("User canceled 'username' input")
+                        raise UserInterrupt()
 
-                    messagebox.showinfo(
-                        "Invalid username",
-                        "You entered empty 'username'. This is not allowed."
-                        "Program is going to terminate."
+                    await register(reader, writer, username)
+
+                # Show received username in GUI
+                queues['statuses'].put_nowait(gui.NicknameReceived(username))
+
+                async with create_handy_nursery() as nursery:
+                    nursery.start_soon(
+                        read_messages(host, read_port, history, queues)
                     )
-                    raise UserInterrupt()
 
-                if username is None:
-                    main_logger.info("User canceled 'username' input")
-                    raise UserInterrupt()
+                    nursery.start_soon(send_messages(reader, writer, queues))
 
-                await register(reader, writer, username)
+                    nursery.start_soon(watch_for_connection(queues['watchdog']))
 
-            # Show received username in GUI
-            queues['statuses'].put_nowait(gui.NicknameReceived(username))
+                    nursery.start_soon(
+                        ping_pong(reader, writer, queues['watchdog'])
+                    )
 
-            async with create_handy_nursery() as nursery:
-                nursery.start_soon(
-                    read_messages(host, read_port, history, queues)
-                )
-
-                nursery.start_soon(send_messages(reader, writer, queues))
-
-                nursery.start_soon(watch_for_connection(queues['watchdog']))
-
-                nursery.start_soon(
-                    ping_pong(reader, writer, queues['watchdog'])
-                )
-
-            # break the infinite loop to make possible to catch exceptions
-            return
+        except (socket.gaierror, ConnectionRefusedError,
+                ConnectionResetError, ConnectionError):
+            print('ConnectionError')
+            await asyncio.sleep(2)
+            continue
 
 
 def get_arguments(host, read_port, write_port, token, history):
@@ -216,5 +216,5 @@ async def main():
 if __name__ == '__main__':
     try:
         asyncio.run(main())
-    except (KeyboardInterrupt, ConnectionError, gui.TkAppClosed, UserInterrupt):
+    except (KeyboardInterrupt, gui.TkAppClosed, UserInterrupt):
         exit()
