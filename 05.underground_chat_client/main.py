@@ -141,11 +141,26 @@ def get_arguments(host, read_port, write_port, token, history):
     parser = argparse.ArgumentParser()
     add_argument = parser.add_argument
 
-    add_argument('--host', type=str, help='Host to connect')
-    add_argument('--read-port', type=str, help='Port to connect for reading')
-    add_argument('--write-port', type=str, help='Port to connect for writing')
-    add_argument('--token', type=str, help='Token')
-    add_argument('--history', type=str, help='Path to history file')
+    add_argument(
+        '--host', type=str,
+        help='Host for connecting to chat',
+    )
+    add_argument(
+        '--read-port', type=str,
+        help='Port for connecting to chat for reading messages. Default: 5000',
+    )
+    add_argument(
+        '--write-port', type=str,
+        help='Port for connecting to chat for writing messages. Default: 5050',
+    )
+    add_argument(
+        '--token', type=str,
+        help='User token for authorisation in chat',
+    )
+    add_argument(
+        '--history', type=str,
+        help='Filepath for save chat messages. Default: history.log',
+    )
 
     parser.set_defaults(
         host=host,
