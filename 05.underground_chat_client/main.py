@@ -5,7 +5,6 @@ import os
 import socket
 from tkinter import messagebox
 
-import aionursery
 from async_timeout import timeout
 from dotenv import load_dotenv
 

@@ -107,7 +107,7 @@ async def register(reader, writer, username):
     data = await reader.readline()
 
     response = json.loads(data.decode())
-    set_key(find_dotenv(), 'TOKEN', response['account_hash'])
+    set_key(find_dotenv(), 'MINECHAT_TOKEN', response['account_hash'])
 
     main_logger.info('register: Username "{}" registered with token {}'.format(
         sanitize(username),
