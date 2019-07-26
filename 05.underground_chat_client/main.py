@@ -204,25 +204,20 @@ async def main():
     queues['watchdog'] = asyncio.Queue()  # track server connection
 
     ports = (read_port, write_port)
-    try:
-        async with create_handy_nursery() as nursery:
-            nursery.start_soon(
-                gui.draw(
-                    queues['messages'], queues['sending'], queues['statuses']
-                )
+    async with create_handy_nursery() as nursery:
+        nursery.start_soon(
+            gui.draw(
+                queues['messages'], queues['sending'], queues['statuses']
             )
+        )
 
-            nursery.start_soon(
-                handle_connection(host, ports, history, token, queues)
-            )
+        nursery.start_soon(
+            handle_connection(host, ports, history, token, queues)
+        )
 
-            nursery.start_soon(
-                save_messages_to_file(history, queues['logging'])
-            )
-
-    except aionursery.MultiError as e:
-        print('#### aionursery.MultiError')
-        print(e.exceptions)
+        nursery.start_soon(
+            save_messages_to_file(history, queues['logging'])
+        )
 
 
 if __name__ == '__main__':
