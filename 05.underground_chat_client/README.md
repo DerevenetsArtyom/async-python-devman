@@ -1,18 +1,4 @@
-# Async Chat Client
-
-This program is a chat client that has graphical user interface based on [Tkinter GUI](https://docs.python.org/3/library/tkinter.html) and uses the [asyncio](https://docs.python.org/3/library/asyncio.html) module.  
-It uses especially asyncio [streams](https://docs.python.org/3/library/asyncio-stream.html) and [queues](https://docs.python.org/3/library/asyncio-queue.html).  
-Asyncio tasks are managed with [aionursery](https://pypi.org/project/aionursery/). 
-
-Main features:
-
-* new user registration in chat with saving user credentials in a .env file
-* existing user authentication in chat
-* reading chat messages
-* sending chat messages
-* automatic reconnection in case of disconnection
-* writing chat messages to a text file
-
+# Async Chat Client with GUI
 
 ## How to install
 

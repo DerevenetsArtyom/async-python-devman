@@ -53,3 +53,16 @@
     * authorize existing user by token
     * create new account with provided username
     * join the conversation and write to chat
+
+* ## [5. Enhanced underground chat with GUI](05.underground_chat_client/README.md)
+    This program is a chat client that has graphical user interface based on [Tkinter GUI](https://docs.python.org/3/library/tkinter.html) and uses the [asyncio](https://docs.python.org/3/library/asyncio.html) module.  
+    It uses asyncio [streams](https://docs.python.org/3/library/asyncio-stream.html) and [queues](https://docs.python.org/3/library/asyncio-queue.html) features in particular.  
+    Asyncio tasks are managed with [aionursery](https://pypi.org/project/aionursery/). 
+    
+    Main features:
+    * registration of new user in chat with saving credentials to .env file
+    * authentication of existing user in chat by token
+    * reading chat messages
+    * sending chat messages
+    * automatic reconnection in case of disconnection
+    * writing chat messages to a text file
