@@ -17,10 +17,13 @@ class UserInterrupt(Exception):
 
 async def open_connection(host, port, max_attempts_in_row=3):
     attempts = 0
-    reader = writer = None
+    reader = None
     while not reader:
         try:
             reader, writer = await asyncio.open_connection(host, port)
+            msg = 'open_connection: Connection established, port: ' + port
+            main_logger.info(msg)
+            return reader, writer
         except (socket.gaierror, ConnectionRefusedError,
                 ConnectionResetError, ConnectionError):
             if attempts < int(max_attempts_in_row):
@@ -32,10 +35,6 @@ async def open_connection(host, port, max_attempts_in_row=3):
                 main_logger.info(msg)
                 await asyncio.sleep(3)
             continue
-        else:
-            msg = 'open_connection: Connection established, port: ' + port
-            main_logger.info(msg)
-    return reader, writer
 
 
 @asynccontextmanager
