@@ -1,0 +1,13 @@
+# Links to check to setup TOR connection
+
+# Used to install and setup TOR:
+#   https://jarroba.com/anonymous-scraping-by-tor-network/
+
+# Used examples from articles (#2 was applied):
+#   http://qaru.site/questions/7264187/how-to-use-socks-proxies-to-make-requests-with-aiohttp
+#   https://stackoverflow.com/questions/55191914/how-to-connect-to-onion-sites-using-python-aiohttp
+
+# Useful
+#   https://www.sylvaindurand.org/use-tor-with-python/
+#   https://stackoverflow.com/questions/30286293/make-requests-using-python-over-tor
+#   https://gist.github.com/keepitsimple/1de1306a396d5534d7f3302e606ba72a
