@@ -1,5 +1,6 @@
-aiohttp==3.5.4
 aiodns==2.0.0
+aiohttp==3.5.4
+aiohttp-socks==0.2.2
 beautifulsoup4==4.8.0
 cchardet==2.1.4
 DAWG-Python==0.7.2

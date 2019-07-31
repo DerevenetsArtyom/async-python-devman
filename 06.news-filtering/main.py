@@ -9,6 +9,10 @@ import asyncio
 # https://stackoverflow.com/questions/55191914/how-to-connect-to-onion-sites-using-python-aiohttp
 # https://gist.github.com/keepitsimple/1de1306a396d5534d7f3302e606ba72a
 
+from aiohttp_socks import SocksConnector
+
+URL = 'https://inosmi.ru/culture/20190731/245546920.html'
+
 
 async def fetch(session, url):
     async with session.get(url) as response:
@@ -17,8 +21,9 @@ async def fetch(session, url):
 
 
 async def main():
-    async with aiohttp.ClientSession() as session:
-        html = await fetch(session, 'http://example.com')
+    connector = SocksConnector.from_url('socks5://127.0.0.1:9050', rdns=True)
+    async with aiohttp.ClientSession(connector=connector) as session:
+        html = await fetch(session, URL)
         print(html)
 
 
