@@ -57,18 +57,24 @@ async def main():
 
     connector = SocksConnector.from_url('socks5://127.0.0.1:9050', rdns=True)
     async with aiohttp.ClientSession(connector=connector) as session:
+        tasks = []
         async with aionursery.Nursery() as nursery:
             for (url, title) in TEST_ARTICLES:
-                nursery.start_soon(
-                    process_article(session, morph, charged_words, url, title)
+                # add all child tasks (one task per one article) to general list
+                tasks.append(
+                    nursery.start_soon(
+                        process_article(
+                            session, morph, charged_words, url, title
+                        )
+                    )
                 )
-            print('Заголовок:', title)
-            print('Рейтинг:', )
-            print('Слов в статье:', )
-            print()
+            done, pending = await asyncio.wait(tasks)  # run all tasks together
 
-    # with open('text.txt') as f:
-    #     html = f.read()
-
+            for future in done:
+                title, score, words_count = future.result()
+                print('Заголовок:', title)
+                print('Рейтинг:', score)
+                print('Слов в статье:', words_count)
+                print()
 
 asyncio.run(main())
