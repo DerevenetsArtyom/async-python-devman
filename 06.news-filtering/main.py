@@ -36,30 +36,36 @@ async def process_article(session, morph, charged_words, url, title):
     clean_plaintext = sanitize(html, plaintext=True)
 
     article_words = split_by_words(morph, clean_plaintext)
+    score = calculate_jaundice_rate(article_words, charged_words)
 
-    print('Заголовок:', title)
-    print('Рейтинг:', calculate_jaundice_rate(article_words, charged_words))
-    print('Слов в статье:', len(article_words))
-    print()
+    return title, score, len(article_words)
 
 
-async def main():
-    morph = pymorphy2.MorphAnalyzer()
+def get_charged_words():
     negative_words = [
         line.rstrip('\n') for line in open('charged_dict/negative_words.txt')
     ]
     positive_words = [
         line.rstrip('\n') for line in open('charged_dict/positive_words.txt')
     ]
-    full_list = [*negative_words, *positive_words]
+    return [*negative_words, *positive_words]
+
+
+async def main():
+    morph = pymorphy2.MorphAnalyzer()
+    charged_words = get_charged_words()
 
     connector = SocksConnector.from_url('socks5://127.0.0.1:9050', rdns=True)
     async with aiohttp.ClientSession(connector=connector) as session:
         async with aionursery.Nursery() as nursery:
             for (url, title) in TEST_ARTICLES:
                 nursery.start_soon(
-                    process_article(session, morph, full_list, url, title)
+                    process_article(session, morph, charged_words, url, title)
                 )
+            print('Заголовок:', title)
+            print('Рейтинг:', )
+            print('Слов в статье:', )
+            print()
 
     # with open('text.txt') as f:
     #     html = f.read()
