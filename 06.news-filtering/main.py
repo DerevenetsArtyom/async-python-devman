@@ -1,10 +1,11 @@
 import asyncio
+from enum import Enum
 
 import aiohttp
 import aionursery
 import pymorphy2
 from adapters import SANITIZERS
-from aiohttp_socks import SocksConnector
+from aiohttp_socks import SocksConnector, SocksError
 from text_tools import split_by_words, calculate_jaundice_rate
 
 sanitize = SANITIZERS['inosmi_ru']
@@ -25,6 +26,11 @@ TEST_ARTICLES = [
 ]
 
 
+class ProcessingStatus(Enum):
+    OK = 'OK'
+    FETCH_ERROR = 'FETCH_ERROR'
+
+
 async def fetch(session, url):
     async with session.get(url) as response:
         response.raise_for_status()
@@ -32,13 +38,24 @@ async def fetch(session, url):
 
 
 async def process_article(session, morph, charged_words, url, title):
-    html = await fetch(session, url)
-    clean_plaintext = sanitize(html, plaintext=True)
+    try:
+        html = await fetch(session, url)
+        link_fetched = True
+    except (SocksError, aiohttp.ClientError):
+        link_fetched = False
 
-    article_words = split_by_words(morph, clean_plaintext)
-    score = calculate_jaundice_rate(article_words, charged_words)
+    if link_fetched:
+        clean_plaintext = sanitize(html, plaintext=True)
+        article_words = split_by_words(morph, clean_plaintext)
+        words_count = len(article_words)
+        score = calculate_jaundice_rate(article_words, charged_words)
+        status = ProcessingStatus.OK
+    else:
+        title = 'URL does not exist'
+        words_count = score = None
+        status = ProcessingStatus.FETCH_ERROR
 
-    return title, score, len(article_words)
+    return title, status, score, words_count
 
 
 def get_charged_words():
@@ -71,10 +88,12 @@ async def main():
             done, pending = await asyncio.wait(tasks)  # run all tasks together
 
             for future in done:
-                title, score, words_count = future.result()
+                title, status, score, words_count = future.result()
                 print('Заголовок:', title)
+                print('Статус:', status)
                 print('Рейтинг:', score)
                 print('Слов в статье:', words_count)
                 print()
+
 
 asyncio.run(main())
