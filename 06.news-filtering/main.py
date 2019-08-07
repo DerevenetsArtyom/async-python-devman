@@ -3,6 +3,7 @@ from enum import Enum
 
 import aiohttp
 import aionursery
+import async_timeout
 import pymorphy2
 from adapters import SANITIZERS, ArticleNotFound
 from aiohttp_socks import SocksConnector, SocksError
@@ -30,12 +31,14 @@ class ProcessingStatus(Enum):
     OK = 'OK'
     FETCH_ERROR = 'FETCH_ERROR'
     PARSING_ERROR = 'PARSING_ERROR'
+    TIMEOUT = 'TIMEOUT'
 
 
 async def fetch(session, url):
-    async with session.get(url) as response:
-        response.raise_for_status()
-        return await response.text()
+    async with async_timeout.timeout(5):
+        async with session.get(url) as response:
+            response.raise_for_status()
+            return await response.text()
 
 
 async def process_article(session, morph, charged_words, url, title):
@@ -54,6 +57,10 @@ async def process_article(session, morph, charged_words, url, title):
         link_fetched = False
         status = ProcessingStatus.PARSING_ERROR
         title = 'Adapter does not exist'
+
+    except asyncio.TimeoutError:
+        link_fetched = False
+        status = ProcessingStatus.TIMEOUT
 
     if link_fetched:
         article_words = split_by_words(morph, clean_plaintext)
