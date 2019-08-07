@@ -4,7 +4,7 @@ from enum import Enum
 import aiohttp
 import aionursery
 import pymorphy2
-from adapters import SANITIZERS
+from adapters import SANITIZERS, ArticleNotFound
 from aiohttp_socks import SocksConnector, SocksError
 from text_tools import split_by_words, calculate_jaundice_rate
 
@@ -29,6 +29,7 @@ TEST_ARTICLES = [
 class ProcessingStatus(Enum):
     OK = 'OK'
     FETCH_ERROR = 'FETCH_ERROR'
+    PARSING_ERROR = 'PARSING_ERROR'
 
 
 async def fetch(session, url):
@@ -41,19 +42,25 @@ async def process_article(session, morph, charged_words, url, title):
     try:
         html = await fetch(session, url)
         link_fetched = True
+        status = ProcessingStatus.OK
+        clean_plaintext = sanitize(html, plaintext=True)
+
     except (SocksError, aiohttp.ClientError):
         link_fetched = False
+        status = ProcessingStatus.FETCH_ERROR
+        title = 'URL does not exist'
+
+    except ArticleNotFound:
+        link_fetched = False
+        status = ProcessingStatus.PARSING_ERROR
+        title = 'Adapter does not exist'
 
     if link_fetched:
-        clean_plaintext = sanitize(html, plaintext=True)
         article_words = split_by_words(morph, clean_plaintext)
         words_count = len(article_words)
         score = calculate_jaundice_rate(article_words, charged_words)
-        status = ProcessingStatus.OK
     else:
-        title = 'URL does not exist'
         words_count = score = None
-        status = ProcessingStatus.FETCH_ERROR
 
     return title, status, score, words_count
 
