@@ -1,4 +1,5 @@
 import asyncio
+import time
 from enum import Enum
 
 import aiohttp
@@ -63,9 +64,15 @@ async def process_article(session, morph, charged_words, url, title):
         status = ProcessingStatus.TIMEOUT
 
     if link_fetched:
+        # TODO: make that with custom context manager
+        start = time.monotonic()
+
         article_words = split_by_words(morph, clean_plaintext)
         words_count = len(article_words)
         score = calculate_jaundice_rate(article_words, charged_words)
+
+        end = time.monotonic()
+        print('Analysis took', round(end - start, 2))
     else:
         words_count = score = None
 
