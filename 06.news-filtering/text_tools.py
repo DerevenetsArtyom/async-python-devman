@@ -1,5 +1,7 @@
 import string
 
+import async_timeout
+
 
 def _clean_word(word):
     word = word.replace('«', '').replace('»', '').replace('…', '')
@@ -8,12 +10,14 @@ def _clean_word(word):
     return word
 
 
-def split_by_words(morph, text):
+async def split_by_words(morph, text):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
     words = []
     for word in text.split():
         cleaned_word = _clean_word(word)
-        normalized_word = morph.parse(cleaned_word)[0].normal_form
+        async with async_timeout.timeout(3):
+            normalized_word = morph.parse(cleaned_word)[0].normal_form
+
         if len(normalized_word) > 2 or normalized_word == 'не':
             words.append(normalized_word)
     return words

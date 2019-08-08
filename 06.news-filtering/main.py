@@ -63,20 +63,24 @@ async def process_article(session, morph, charged_words, url, title):
         link_fetched = False
         status = ProcessingStatus.TIMEOUT
 
+    # TODO: make that with custom context manager
+    start = time.monotonic()
+
     if link_fetched:
-        # TODO: make that with custom context manager
-        start = time.monotonic()
-
-        article_words = split_by_words(morph, clean_plaintext)
-        words_count = len(article_words)
-        score = calculate_jaundice_rate(article_words, charged_words)
-
-        end = time.monotonic()
-        print('Analysis took', round(end - start, 2))
+        try:
+            article_words = await split_by_words(morph, clean_plaintext)
+            words_count = len(article_words)
+            score = calculate_jaundice_rate(article_words, charged_words)
+        except asyncio.TimeoutError:
+            status = ProcessingStatus.TIMEOUT
+            words_count = score = None
     else:
         words_count = score = None
 
-    return title, status, score, words_count
+    end = time.monotonic()
+    time_taken = round(end - start, 2)
+
+    return title, status, score, words_count, time_taken
 
 
 def get_charged_words():
@@ -109,11 +113,12 @@ async def main():
             done, pending = await asyncio.wait(tasks)  # run all tasks together
 
             for future in done:
-                title, status, score, words_count = future.result()
+                title, status, score, words_count, time_taken = future.result()
                 print('Заголовок:', title)
                 print('Статус:', status)
                 print('Рейтинг:', score)
                 print('Слов в статье:', words_count)
+                print('Analysis took', time_taken)
                 print()
 
 
