@@ -1,5 +1,6 @@
-import pymorphy2
+import asyncio
 
+import pymorphy2
 from text_tools import calculate_jaundice_rate, split_by_words
 
 
@@ -10,11 +11,11 @@ def test_split_by_words():
     # чтоб создавать экземпляр MorphAnalyzer заранее и в единственном числе
     morph = pymorphy2.MorphAnalyzer()
 
-    assert (split_by_words(morph, 'Во-первых, он хочет, чтобы') ==
-            ['во-первых', 'хотеть', 'чтобы'])
+    task = split_by_words(morph, 'Во-первых, он хочет, чтобы')
+    assert asyncio.run(task) == ['во-первых', 'хотеть', 'чтобы']
 
-    assert (split_by_words(morph, '«Удивительно, но это стало началом!»') ==
-            ['удивительно', 'это', 'стать', 'начало'])
+    task = split_by_words(morph, '«Удивительно, но это стало началом!»')
+    assert asyncio.run(task) == ['удивительно', 'это', 'стать', 'начало']
 
 
 def test_calculate_jaundice_rate():
