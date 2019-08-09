@@ -2,6 +2,9 @@ import asyncio
 import time
 from enum import Enum
 
+from aiohttp import web
+import functools
+
 import aiohttp
 import aionursery
 import async_timeout
@@ -94,9 +97,6 @@ def get_charged_words():
 
 
 async def main():
-    morph = pymorphy2.MorphAnalyzer()
-    charged_words = get_charged_words()
-
     connector = SocksConnector.from_url('socks5://127.0.0.1:9050', rdns=True)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []
@@ -123,3 +123,31 @@ async def main():
 
 
 asyncio.run(main())
+
+
+async def articles_handler(morph, charged_words, request):
+    # http://127.0.0.1?urls=https://ya.ru,https://google.com
+    # {'urls': ['https://ya.ru', 'https://google.com']}
+
+    urls = request.rel_url.query['urls']
+    data = {"urls": urls.split(',')}
+
+    # await main(urls)
+
+    return web.json_response(data)
+
+
+def main():
+    morph = pymorphy2.MorphAnalyzer()
+    charged_words = get_charged_words()
+
+    app = web.Application()
+    app.add_routes([
+        web.get('/', functools.partial(articles_handler, morph, charged_words)),
+    ])
+
+    web.run_app(app)
+
+
+if __name__ == "__main__":
+    main()
