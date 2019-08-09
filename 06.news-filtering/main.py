@@ -93,7 +93,9 @@ def get_charged_words():
 
 
 async def get_parsed_articles(morph, charged_words, urls):
+    # Can't connect directly because of blocked site, use TOR
     connector = SocksConnector.from_url('socks5://127.0.0.1:9050', rdns=True)
+
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []
         async with aionursery.Nursery() as nursery:
@@ -132,9 +134,15 @@ async def articles_handler(morph, charged_words, request):
     urls_params = request.rel_url.query['urls']
     urls_list = urls_params.split(',')
 
+    if len(urls_list) > 10:
+        return web.json_response(
+            data={"error": "too many urls in request, should be 10 or less"},
+            status=400
+        )
+
     result_data = await get_parsed_articles(morph, charged_words, urls_list)
 
-    return web.json_response(result_data)
+    return web.json_response(data=result_data)
 
 
 def main():
