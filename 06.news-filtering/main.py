@@ -62,9 +62,6 @@ async def process_article(session, morph, charged_words, url):
         link_fetched = False
         status = ProcessingStatus.TIMEOUT
 
-    # TODO: make that with custom context manager
-    start = time.monotonic()
-
     if link_fetched:
         try:
             article_words = await split_by_words(morph, clean_plaintext)
@@ -76,10 +73,7 @@ async def process_article(session, morph, charged_words, url):
     else:
         words_count = score = None
 
-    end = time.monotonic()
-    time_taken = round(end - start, 2)
-
-    return url, status, score, words_count, time_taken
+    return url, status, score, words_count
 
 
 def get_charged_words():
@@ -111,26 +105,18 @@ async def get_parsed_articles(morph, charged_words, urls):
             results = []
 
             for future in done:
-                url, status, score, words_count, time_taken = future.result()
+                url, status, score, words_count = future.result()
                 results.append({
                     'status': status.value,
                     'url': url,
                     'score': score,
                     'words_count': words_count,
                 })
-                print('URL:', url)
-                print('Статус:', status)
-                print('Рейтинг:', score)
-                print('Слов в статье:', words_count)
-                print('Analysis took', time_taken)
-                print()
 
     return results
 
 
 async def articles_handler(morph, charged_words, request):
-    # http://0.0.0.0:8080?urls=https://inosmi.ru/social/20190714/245464409.html,https://inosmi.ru/military/20190806/245591101.html
-
     urls_params = request.rel_url.query['urls']
     urls_list = urls_params.split(',')
 

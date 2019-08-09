@@ -44,7 +44,7 @@ async def test_success_process_article(charged_words, morph,
     test_url = f'https://inosmi.ru/test_articlle'
 
     with asynctest.patch('main.fetch', side_effect=fetch_mock):
-        url, status, score, words_count, _ = await process_article(
+        url, status, score, words_count = await process_article(
             session_mock, morph, charged_words, test_url
         )
         assert url == test_url
@@ -67,7 +67,7 @@ async def test_non_existing_article_parsing(charged_words, morph,
         result = await process_article(
             session_mock, morph, charged_words, broken_url
         )
-        assert result[:4] == expected_result
+        assert result == expected_result
 
 
 async def test_invalid_url_error(charged_words, morph, session_mock):
@@ -84,7 +84,7 @@ async def test_invalid_url_error(charged_words, morph, session_mock):
         result = await process_article(
             session_mock, morph, charged_words, invalid_url
         )
-        assert result[:4] == expected_result
+        assert result == expected_result
 
 
 async def test_client_error(charged_words, morph, session_mock):
@@ -101,4 +101,4 @@ async def test_client_error(charged_words, morph, session_mock):
         result = await process_article(
             session_mock, morph, charged_words, wrong_client_url
         )
-        assert result[:4] == expected_result
+        assert result == expected_result
