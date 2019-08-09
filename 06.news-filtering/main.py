@@ -1,15 +1,13 @@
 import asyncio
-import time
-from enum import Enum
-
-from aiohttp import web
 import functools
+from enum import Enum
 
 import aiohttp
 import aionursery
 import async_timeout
 import pymorphy2
 from adapters import SANITIZERS, ArticleNotFound
+from aiohttp import web
 from aiohttp_socks import SocksConnector, SocksError
 from text_tools import split_by_words, calculate_jaundice_rate
 
@@ -117,8 +115,11 @@ async def get_parsed_articles(morph, charged_words, urls):
 
 
 async def articles_handler(morph, charged_words, request):
-    urls_params = request.rel_url.query['urls']
-    urls_list = urls_params.split(',')
+    urls_params = request.rel_url.query["urls"]
+    urls_list = urls_params.split(",")
+
+    if not urls_params:
+        return web.json_response(data={"error": "no one urls"}, status=400)
 
     if len(urls_list) > 10:
         return web.json_response(
@@ -137,7 +138,7 @@ def main():
 
     app = web.Application()
     app.add_routes([
-        web.get('/', functools.partial(articles_handler, morph, charged_words)),
+        web.get("/", functools.partial(articles_handler, morph, charged_words)),
     ])
 
     web.run_app(app)
