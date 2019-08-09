@@ -96,12 +96,13 @@ def get_charged_words():
     return [*negative_words, *positive_words]
 
 
-async def main():
+async def get_parsed_articles(morph, charged_words, urls):
     connector = SocksConnector.from_url('socks5://127.0.0.1:9050', rdns=True)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []
         async with aionursery.Nursery() as nursery:
-            for (url, title) in TEST_ARTICLES:
+            title = None
+            for url in urls:
                 # add all child tasks (one task per one article) to general list
                 tasks.append(
                     nursery.start_soon(
@@ -112,29 +113,36 @@ async def main():
                 )
             done, pending = await asyncio.wait(tasks)  # run all tasks together
 
+            res = []
+
             for future in done:
                 title, status, score, words_count, time_taken = future.result()
+                res.append({
+                    'status': status.value,
+                    'score': score,
+                    'words_count': words_count,
+                })
                 print('Заголовок:', title)
                 print('Статус:', status)
                 print('Рейтинг:', score)
                 print('Слов в статье:', words_count)
                 print('Analysis took', time_taken)
                 print()
+    return res
 
 
-asyncio.run(main())
+# asyncio.run(main())
 
 
 async def articles_handler(morph, charged_words, request):
-    # http://127.0.0.1?urls=https://ya.ru,https://google.com
-    # {'urls': ['https://ya.ru', 'https://google.com']}
+    # http://0.0.0.0:8080?urls=https://inosmi.ru/social/20190714/245464409.html,https://inosmi.ru/military/20190806/245591101.html
 
-    urls = request.rel_url.query['urls']
-    data = {"urls": urls.split(',')}
+    urls_params = request.rel_url.query['urls']
+    urls_list = urls_params.split(',')
 
-    # await main(urls)
+    result_data = await get_parsed_articles(morph, charged_words, urls_list)
 
-    return web.json_response(data)
+    return web.json_response(result_data)
 
 
 def main():
