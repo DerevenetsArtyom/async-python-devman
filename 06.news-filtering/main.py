@@ -15,8 +15,6 @@ from text_tools import split_by_words, calculate_jaundice_rate
 
 sanitize = SANITIZERS['inosmi_ru']
 
-URL = 'https://inosmi.ru/culture/20190731/245546920.html'
-
 TEST_ARTICLES = [
     ("https://inosmi.ru/social/20190714/245464409.html",
      "Нигилизм национального масштаба: нашу самобытность уничтожают"),
@@ -45,7 +43,7 @@ async def fetch(session, url):
             return await response.text()
 
 
-async def process_article(session, morph, charged_words, url, title):
+async def process_article(session, morph, charged_words, url):
     try:
         html = await fetch(session, url)
         link_fetched = True
@@ -55,12 +53,10 @@ async def process_article(session, morph, charged_words, url, title):
     except (SocksError, aiohttp.ClientError):
         link_fetched = False
         status = ProcessingStatus.FETCH_ERROR
-        title = 'URL does not exist'
 
     except ArticleNotFound:
         link_fetched = False
         status = ProcessingStatus.PARSING_ERROR
-        title = 'Adapter does not exist'
 
     except asyncio.TimeoutError:
         link_fetched = False
@@ -83,7 +79,7 @@ async def process_article(session, morph, charged_words, url, title):
     end = time.monotonic()
     time_taken = round(end - start, 2)
 
-    return title, status, score, words_count, time_taken
+    return url, status, score, words_count, time_taken
 
 
 def get_charged_words():
@@ -101,37 +97,33 @@ async def get_parsed_articles(morph, charged_words, urls):
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []
         async with aionursery.Nursery() as nursery:
-            title = None
             for url in urls:
                 # add all child tasks (one task per one article) to general list
                 tasks.append(
                     nursery.start_soon(
-                        process_article(
-                            session, morph, charged_words, url, title
-                        )
+                        process_article(session, morph, charged_words, url)
                     )
                 )
             done, pending = await asyncio.wait(tasks)  # run all tasks together
 
-            res = []
+            results = []
 
             for future in done:
-                title, status, score, words_count, time_taken = future.result()
-                res.append({
+                url, status, score, words_count, time_taken = future.result()
+                results.append({
                     'status': status.value,
+                    'url': url,
                     'score': score,
                     'words_count': words_count,
                 })
-                print('Заголовок:', title)
+                print('URL:', url)
                 print('Статус:', status)
                 print('Рейтинг:', score)
                 print('Слов в статье:', words_count)
                 print('Analysis took', time_taken)
                 print()
-    return res
 
-
-# asyncio.run(main())
+    return results
 
 
 async def articles_handler(morph, charged_words, request):
