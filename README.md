@@ -7,6 +7,7 @@
     * own custom game engine
     * animation of stars and ship
     * user interaction via arrow keys on the keyboard
+
 * ## [2. Through garbage to stars!](02.through_garbage_to_stars/README.md)
     The first part of the game turned out to be relaxing and meditatively utopian, so fans of actions will call it boring.  
     It's time to add a mode with guns: explosions, asteroids, satellites, hot pieces of plating.  
@@ -23,6 +24,7 @@
      * improved movement mechanics of spaceship
      * calculating collisions of spaceship with obstacles
      * game becomes harder as time goes by
+ 
 * ## [3. I need your photos](03.photo_sharing/async-download-service/README.md)
     Could you share some photos?
     What happens when you click the Download button in Dropbox? 
@@ -66,3 +68,21 @@
     * sending chat messages
     * automatic reconnection in case of disconnection
     * writing chat messages to a text file
+
+* ## [6. Filtering the Internet at the speed of light](06.news-filtering/README.md)
+    Are you tired of the fake news on the Internet? Now there is a chance to get even with them. 
+    There will be a crawler, which will be held on the sites and will make its own rating of jaundice. 
+    The more expressive words, brightly negative or enthusiastically positive phrases in the text, 
+    the lower the rating of the article and the less desire to read it.
+    Thanks to the asynchronous nature of it will gain a huge speed, limited only by the network connection.
+
+    The task of the plugin to the browser is to scan a page of the news site and find all the links to the articles. 
+    Next, a web service comes into play: it downloads the text of the article, 
+    conducts analysis and makes its own verdict - assigns a rating of jaundice. 
+    The information is sent back to the plugin and it displays the rating directly on the page of the news site.
+
+    Algorithms of text evaluation are ready, the plugin is on the way, there is no backend. 
+
+    * Evaluation the objectivity of the articles
+    * Acceleration the analysis to the maximum
+    * JSON-API for browser plugin
