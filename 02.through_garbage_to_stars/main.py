@@ -8,8 +8,11 @@ from provided.explosion import explode
 from provided.game_scenario import get_garbage_delay_tics, PHRASES
 from provided.obstacles import Obstacle, show_obstacles
 from provided.physics import update_speed
-from read_frames import (read_garbage_frames, read_rocket_frames,
-                         read_game_over_frame)
+from read_frames import (
+    read_garbage_frames,
+    read_rocket_frames,
+    read_game_over_frame,
+)
 from utils import sleep, blink
 
 RANGE_OF_STARS = (50, 60)
@@ -33,9 +36,9 @@ async def fire(canvas, start_row, start_column):
                 obstacles_in_last_collisions.append(obstacle)
                 return
 
-        canvas.addstr(round(row), round(column), '|')
+        canvas.addstr(round(row), round(column), "|")
         await asyncio.sleep(0)
-        canvas.addstr(round(row), round(column), ' ')
+        canvas.addstr(round(row), round(column), " ")
         # Emulate moving from the bottom to the top
         row -= 1
 
@@ -82,8 +85,7 @@ async def run_spaceship(canvas, frame_rows, frame_columns, game_over_frame):
             coroutines.append(fire(canvas, row, column))
 
         row_speed, column_speed = update_speed(
-            row_speed, column_speed,
-            row_diff, column_diff
+            row_speed, column_speed, row_diff, column_diff
         )
 
         # Horizontal restriction: right <-> left
@@ -139,9 +141,7 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
             if obstacle in obstacles_in_last_collisions:
                 obstacles_in_last_collisions.remove(obstacle)
                 await explode(
-                    canvas,
-                    row + (rows_size // 2),
-                    column + (columns_size // 2)
+                    canvas, row + (rows_size // 2), column + (columns_size // 2)
                 )
                 return
     finally:
@@ -244,6 +244,6 @@ def draw(canvas):
         time.sleep(TIC_TIMEOUT)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     curses.update_lines_cols()
     curses.wrapper(draw)

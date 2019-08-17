@@ -9,15 +9,15 @@ def read_rocket_frames():
 
 
 def read_garbage_frames():
-    with open('animation_frames/trash_small.txt') as f:
+    with open("animation_frames/trash_small.txt") as f:
         small_garbage_frame = f.read()
 
-    with open('animation_frames/trash_large.txt') as f:
+    with open("animation_frames/trash_large.txt") as f:
         large_garbage_frame = f.read()
 
     return small_garbage_frame, large_garbage_frame
 
 
 def read_game_over_frame():
-    with open('animation_frames/game_over.txt') as f:
+    with open("animation_frames/game_over.txt") as f:
         return f.read()

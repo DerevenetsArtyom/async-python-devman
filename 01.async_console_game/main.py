@@ -82,10 +82,7 @@ def draw(canvas):
 
     # Add action (coroutine) - animate spaceship
     coroutine_rocket = animate_spaceship(
-        canvas,
-        canvas_height // 2,
-        canvas_width // 2,
-        frame1, frame2,
+        canvas, canvas_height // 2, canvas_width // 2, frame1, frame2
     )
     coroutines.append(coroutine_rocket)
 
@@ -111,6 +108,6 @@ def draw(canvas):
         time.sleep(TIC_TIMEOUT)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     curses.update_lines_cols()
     curses.wrapper(draw)

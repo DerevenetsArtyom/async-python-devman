@@ -36,8 +36,15 @@ def _apply_acceleration(speed, speed_limit, forward=True):
     return result_speed
 
 
-def update_speed(row_speed, column_speed, rows_direction, columns_direction,
-                 row_speed_limit=2, column_speed_limit=2, fading=0.8):
+def update_speed(
+    row_speed,
+    column_speed,
+    rows_direction,
+    columns_direction,
+    row_speed_limit=2,
+    column_speed_limit=2,
+    fading=0.8,
+):
     """Update speed smoothly to make control handy for player.
     Return new speed value (row_speed, column_speed)
 
@@ -54,31 +61,38 @@ def update_speed(row_speed, column_speed, rows_direction, columns_direction,
 
     if rows_direction not in (-1, 0, 1):
         raise ValueError(
-            f'Wrong rows_direction value {rows_direction}. Expects -1, 0 or 1.')
+            f"Wrong rows_direction value {rows_direction}. Expects -1, 0 or 1."
+        )
 
     if columns_direction not in (-1, 0, 1):
         raise ValueError(
-            f'Wrong columns_direction value {columns_direction}. '
-            f'Expects -1, 0 or 1.')
+            f"Wrong columns_direction value {columns_direction}. "
+            f"Expects -1, 0 or 1."
+        )
 
     if fading < 0 or fading > 1:
         raise ValueError(
-            f'Wrong columns_direction value {fading}. '
-            f'Expects float between 0 and 1.')
+            f"Wrong columns_direction value {fading}. "
+            f"Expects float between 0 and 1."
+        )
 
     # гасим скорость, чтобы корабль останавливался со временем
     row_speed *= fading
     column_speed *= fading
 
-    row_speed_limit, column_speed_limit = abs(row_speed_limit), abs(
-        column_speed_limit)
+    row_speed_limit, column_speed_limit = (
+        abs(row_speed_limit),
+        abs(column_speed_limit),
+    )
 
     if rows_direction != 0:
-        row_speed = _apply_acceleration(row_speed, row_speed_limit,
-                                        rows_direction > 0)
+        row_speed = _apply_acceleration(
+            row_speed, row_speed_limit, rows_direction > 0
+        )
 
     if columns_direction != 0:
-        column_speed = _apply_acceleration(column_speed, column_speed_limit,
-                                           columns_direction > 0)
+        column_speed = _apply_acceleration(
+            column_speed, column_speed_limit, columns_direction > 0
+        )
 
     return row_speed, column_speed

@@ -55,7 +55,7 @@ def draw_frame(canvas, start_row, start_column, text, negative=False):
             if column >= columns_number:
                 break
 
-            symbol = symbol if not negative else ' '
+            symbol = symbol if not negative else " "
             canvas.addch(row, column, symbol)
 
 
