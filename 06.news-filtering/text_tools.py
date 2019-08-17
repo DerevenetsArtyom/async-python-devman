@@ -4,7 +4,7 @@ import async_timeout
 
 
 def _clean_word(word):
-    word = word.replace('«', '').replace('»', '').replace('…', '')
+    word = word.replace("«", "").replace("»", "").replace("…", "")
     # FIXME какие еще знаки пунктуации часто встречаются ?
     word = word.strip(string.punctuation)
     return word
@@ -18,7 +18,7 @@ async def split_by_words(morph, text):
         async with async_timeout.timeout(3):
             normalized_word = morph.parse(cleaned_word)[0].normal_form
 
-        if len(normalized_word) > 2 or normalized_word == 'не':
+        if len(normalized_word) > 2 or normalized_word == "не":
             words.append(normalized_word)
     return words
 

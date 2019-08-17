@@ -11,15 +11,16 @@ def test_split_by_words():
     # чтоб создавать экземпляр MorphAnalyzer заранее и в единственном числе
     morph = pymorphy2.MorphAnalyzer()
 
-    task = split_by_words(morph, 'Во-первых, он хочет, чтобы')
-    assert asyncio.run(task) == ['во-первых', 'хотеть', 'чтобы']
+    task = split_by_words(morph, "Во-первых, он хочет, чтобы")
+    assert asyncio.run(task) == ["во-первых", "хотеть", "чтобы"]
 
-    task = split_by_words(morph, '«Удивительно, но это стало началом!»')
-    assert asyncio.run(task) == ['удивительно', 'это', 'стать', 'начало']
+    task = split_by_words(morph, "«Удивительно, но это стало началом!»")
+    assert asyncio.run(task) == ["удивительно", "это", "стать", "начало"]
 
 
 def test_calculate_jaundice_rate():
     assert -0.01 < calculate_jaundice_rate([], []) < 0.01
     rate = calculate_jaundice_rate(
-        ['все', 'аутсайдер', 'побег'], ['аутсайдер', 'банкротство'])
+        ["все", "аутсайдер", "побег"], ["аутсайдер", "банкротство"]
+    )
     assert 33.0 < rate < 34.0

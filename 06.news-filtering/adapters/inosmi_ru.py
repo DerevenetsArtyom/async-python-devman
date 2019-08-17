@@ -5,7 +5,7 @@ from .html_tools import remove_buzz_attrs, remove_buzz_tags, remove_all_tags
 
 
 def sanitize(html, plaintext=False):
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, "html.parser")
     articles = soup.select("article.article")
 
     if len(articles) != 1:
@@ -15,9 +15,9 @@ def sanitize(html, plaintext=False):
     article.attrs = {}
 
     buzz_blocks = [
-        *article.select('.article-disclaimer'),
-        *article.select('footer.article-footer'),
-        *article.select('aside'),
+        *article.select(".article-disclaimer"),
+        *article.select("footer.article-footer"),
+        *article.select("aside"),
     ]
     for el in buzz_blocks:
         el.decompose()

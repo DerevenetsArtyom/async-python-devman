@@ -11,27 +11,37 @@ from aiohttp import web
 from aiohttp_socks import SocksConnector, SocksError
 from text_tools import split_by_words, calculate_jaundice_rate
 
-sanitize = SANITIZERS['inosmi_ru']
+sanitize = SANITIZERS["inosmi_ru"]
 
 TEST_ARTICLES = [
-    ("https://inosmi.ru/social/20190714/245464409.html",
-     "Нигилизм национального масштаба: нашу самобытность уничтожают"),
-    ("https://inosmi.ru/military/20190806/245591101.html",
-     "Америка может проиграть в настоящей войне с Россией"),
-    ("https://inosmi.ru/social/20190412/244929181.html",
-     "Berlingske (Дания): цвет кожи, предрассудки и слово «негр»"),
-    ("https://inosmi.ru/politic/20190802/245567929.html",
-     "Yeni Akit (Турция): мир застыл в ожидании учений в Ормузском проливе"),
-    ("https://inosmi.ru/politic/20190806/245586424.html",
-     "Daily Sabah: Индия намерена лишить Кашмир особого статуса"),
+    (
+        "https://inosmi.ru/social/20190714/245464409.html",
+        "Нигилизм национального масштаба: нашу самобытность уничтожают",
+    ),
+    (
+        "https://inosmi.ru/military/20190806/245591101.html",
+        "Америка может проиграть в настоящей войне с Россией",
+    ),
+    (
+        "https://inosmi.ru/social/20190412/244929181.html",
+        "Berlingske (Дания): цвет кожи, предрассудки и слово «негр»",
+    ),
+    (
+        "https://inosmi.ru/politic/20190802/245567929.html",
+        "Yeni Akit (Турция): мир застыл в ожидании учений в Ормузском проливе",
+    ),
+    (
+        "https://inosmi.ru/politic/20190806/245586424.html",
+        "Daily Sabah: Индия намерена лишить Кашмир особого статуса",
+    ),
 ]
 
 
 class ProcessingStatus(Enum):
-    OK = 'OK'
-    FETCH_ERROR = 'FETCH_ERROR'
-    PARSING_ERROR = 'PARSING_ERROR'
-    TIMEOUT = 'TIMEOUT'
+    OK = "OK"
+    FETCH_ERROR = "FETCH_ERROR"
+    PARSING_ERROR = "PARSING_ERROR"
+    TIMEOUT = "TIMEOUT"
 
 
 async def fetch(session, url):
@@ -76,17 +86,17 @@ async def process_article(session, morph, charged_words, url):
 
 def get_charged_words():
     negative_words = [
-        line.rstrip('\n') for line in open('charged_dict/negative_words.txt')
+        line.rstrip("\n") for line in open("charged_dict/negative_words.txt")
     ]
     positive_words = [
-        line.rstrip('\n') for line in open('charged_dict/positive_words.txt')
+        line.rstrip("\n") for line in open("charged_dict/positive_words.txt")
     ]
     return [*negative_words, *positive_words]
 
 
 async def get_parsed_articles(morph, charged_words, urls):
     # Can't connect directly because of blocked site, use TOR
-    connector = SocksConnector.from_url('socks5://127.0.0.1:9050', rdns=True)
+    connector = SocksConnector.from_url("socks5://127.0.0.1:9050", rdns=True)
 
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = []
@@ -104,12 +114,14 @@ async def get_parsed_articles(morph, charged_words, urls):
 
             for future in done:
                 url, status, score, words_count = future.result()
-                results.append({
-                    'status': status.value,
-                    'url': url,
-                    'score': score,
-                    'words_count': words_count,
-                })
+                results.append(
+                    {
+                        "status": status.value,
+                        "url": url,
+                        "score": score,
+                        "words_count": words_count,
+                    }
+                )
 
     return results
 
@@ -124,7 +136,7 @@ async def articles_handler(morph, charged_words, request):
     if len(urls_list) > 10:
         return web.json_response(
             data={"error": "too many urls in request, should be 10 or less"},
-            status=400
+            status=400,
         )
 
     result_data = await get_parsed_articles(morph, charged_words, urls_list)
@@ -137,9 +149,13 @@ def main():
     charged_words = get_charged_words()
 
     app = web.Application()
-    app.add_routes([
-        web.get("/", functools.partial(articles_handler, morph, charged_words)),
-    ])
+    app.add_routes(
+        [
+            web.get(
+                "/", functools.partial(articles_handler, morph, charged_words)
+            )
+        ]
+    )
 
     web.run_app(app)
 
