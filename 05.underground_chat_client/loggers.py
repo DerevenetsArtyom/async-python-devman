@@ -1,10 +1,15 @@
 import logging
 
 
-def setup_logger(logger_name, log_file=None, level=logging.INFO,
-                 fmt='%(asctime)s: %(message)s', datefmt='%H:%M:%S'):
+def setup_logger(
+    logger_name,
+    log_file=None,
+    level=logging.INFO,
+    fmt="%(asctime)s: %(message)s",
+    datefmt="%H:%M:%S",
+):
     if not log_file:
-        log_file = f'{logger_name}.log'
+        log_file = f"{logger_name}.log"
 
     logger = logging.getLogger(logger_name)
     logger.setLevel(level)
