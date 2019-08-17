@@ -9,7 +9,8 @@ def first():
     # You can start any program with any parameter.
 
     from subprocess import Popen, PIPE
-    process = Popen(['cat', 'README.md'], stdout=PIPE, stderr=PIPE)
+
+    process = Popen(["cat", "README.md"], stdout=PIPE, stderr=PIPE)
 
     # The process.communicate() call reads input and output from the process.
     # stdout is the process output.

@@ -15,11 +15,9 @@ Python code for left side:
 
 async def archivate(cmd):
     proc = await asyncio.create_subprocess_shell(
-        cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
-    print('Started:', cmd, '(pid = ' + str(proc.pid) + ')')
+    print("Started:", cmd, "(pid = " + str(proc.pid) + ")")
 
     full_archive = bytearray()
 
@@ -28,15 +26,15 @@ async def archivate(cmd):
         if archive_chunk:
             full_archive += archive_chunk
         else:
-            print(f'[{cmd!r} exited with {proc.returncode}]')
+            print(f"[{cmd!r} exited with {proc.returncode}]")
             break
 
-    with open('archive.zip', 'wb') as arc:
+    with open("archive.zip", "wb") as arc:
         arc.write(full_archive)
 
-command = 'zip -r - async-download-service/'
+
+command = "zip -r - async-download-service/"
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(archivate(command))
 loop.close()
-
