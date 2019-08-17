@@ -15,7 +15,7 @@ async def tcp_client(host, port, history):
         try:
             reader, writer = await connect((host, port), history)
 
-            async with aiofiles.open(history, 'a') as file:
+            async with aiofiles.open(history, "a") as file:
                 while True:
                     data = await reader.readline()
                     await log_to_file(data.decode(), file)
@@ -29,15 +29,11 @@ async def tcp_client(host, port, history):
 
 def get_arguments(host, port, history):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host', type=str, help='Host to connect')
-    parser.add_argument('--port', type=str, help='Port to connect')
-    parser.add_argument('--history', type=str, help='Path to history file')
+    parser.add_argument("--host", type=str, help="Host to connect")
+    parser.add_argument("--port", type=str, help="Port to connect")
+    parser.add_argument("--history", type=str, help="Path to history file")
 
-    parser.set_defaults(
-        host=host,
-        port=port,
-        history=history,
-    )
+    parser.set_defaults(host=host, port=port, history=history)
     args = parser.parse_args()
     return vars(args)
 
@@ -45,14 +41,14 @@ def get_arguments(host, port, history):
 def main():
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s: %(message)s',
-        datefmt='%H:%M:%S',
+        format="%(asctime)s: %(message)s",
+        datefmt="%H:%M:%S",
     )
     load_dotenv()
     args = get_arguments(
-        os.getenv('SERVER_HOST', SERVER_HOST),
-        os.getenv('SERVER_READ_PORT', SERVER_READ_PORT),
-        os.getenv('HISTORY', HISTORY),
+        os.getenv("SERVER_HOST", SERVER_HOST),
+        os.getenv("SERVER_READ_PORT", SERVER_READ_PORT),
+        os.getenv("HISTORY", HISTORY),
     )
     loop = asyncio.get_event_loop()
 
@@ -64,5 +60,5 @@ def main():
         loop.stop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

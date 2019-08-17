@@ -10,42 +10,43 @@ from constants import SERVER_WRITE_PORT, SERVER_HOST
 
 
 async def submit_message(reader, writer, message):
-    message = '{}\n\n'.format(sanitize(message))
+    message = "{}\n\n".format(sanitize(message))
     writer.write(message.encode())
     await writer.drain()
-    logging.info('Sent message: {}'.format(sanitize(message)))
+    logging.info("Sent message: {}".format(sanitize(message)))
 
     data = await reader.readline()
-    logging.info('Received: {}'.format(data.decode()))
+    logging.info("Received: {}".format(data.decode()))
 
 
 async def register(reader, writer, username):
-    logging.info('Register: Try username {}'.format(username))
+    logging.info("Register: Try username {}".format(username))
 
-    writer.write('\n'.encode())
+    writer.write("\n".encode())
     await writer.drain()
 
     await reader.readline()
 
-    message = '{}\n'.format(sanitize(username))
+    message = "{}\n".format(sanitize(username))
     writer.write(message.encode())
     await writer.drain()
 
     data = await reader.readline()
 
     response = json.loads(data.decode())
-    set_key(find_dotenv(), 'TOKEN', response['account_hash'])
+    set_key(find_dotenv(), "TOKEN", response["account_hash"])
 
-    logging.info('Register: Username "{}" registered with token {}'.format(
-        sanitize(username),
-        response['account_hash']
-    ))
+    logging.info(
+        'Register: Username "{}" registered with token {}'.format(
+            sanitize(username), response["account_hash"]
+        )
+    )
 
     await reader.readline()
 
 
 async def authorise(reader, writer, token):
-    message = token + '\n'
+    message = token + "\n"
     writer.write(message.encode())
     await writer.drain()
 
@@ -57,7 +58,7 @@ async def authorise(reader, writer, token):
         return False
 
     data = await reader.readline()
-    logging.info('Received: {}'.format(data.decode()))
+    logging.info("Received: {}".format(data.decode()))
     return True
 
 
@@ -79,19 +80,19 @@ async def dive_into_chatting(host, port, token, username, message):
             await register(reader, writer, username)
             await submit_message(reader, writer, message)
     finally:
-        logging.info('Close the connection')
+        logging.info("Close the connection")
         writer.close()
 
 
 def get_arguments(host, port, token, username, message):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host', type=str, help='Host to connect')
-    parser.add_argument('--port', type=str, help='Port to connect')
-    parser.add_argument('--message', type=str, help='Message')
+    parser.add_argument("--host", type=str, help="Host to connect")
+    parser.add_argument("--port", type=str, help="Port to connect")
+    parser.add_argument("--message", type=str, help="Message")
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--token', type=str, help='Token')
-    group.add_argument('--username', type=str, help='Username')
+    group.add_argument("--token", type=str, help="Token")
+    group.add_argument("--username", type=str, help="Username")
 
     args = parser.parse_args()
     if args.username:
@@ -100,11 +101,7 @@ def get_arguments(host, port, token, username, message):
         username = None
 
     parser.set_defaults(
-        host=host,
-        port=port,
-        token=token,
-        username=username,
-        message=message
+        host=host, port=port, token=token, username=username, message=message
     )
     args = parser.parse_args()
     return vars(args)
@@ -113,17 +110,17 @@ def get_arguments(host, port, token, username, message):
 def main():
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s: %(message)s',
-        datefmt='%H:%M:%S',
+        format="%(asctime)s: %(message)s",
+        datefmt="%H:%M:%S",
     )
 
     load_dotenv()
     args = get_arguments(
-        os.getenv('CHAT_HOST', SERVER_HOST),
-        os.getenv('SERVER_WRITE_PORT', SERVER_WRITE_PORT),
-        os.getenv('TOKEN'),
-        os.getenv('USERNAME'),
-        os.getenv('MESSAGE', 'Hello from Python')
+        os.getenv("CHAT_HOST", SERVER_HOST),
+        os.getenv("SERVER_WRITE_PORT", SERVER_WRITE_PORT),
+        os.getenv("TOKEN"),
+        os.getenv("USERNAME"),
+        os.getenv("MESSAGE", "Hello from Python"),
     )
 
     loop = asyncio.get_event_loop()
@@ -135,5 +132,5 @@ def main():
         loop.stop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
