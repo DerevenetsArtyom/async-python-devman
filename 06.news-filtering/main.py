@@ -85,12 +85,12 @@ async def process_article(session, morph, charged_words, url):
 
 
 def get_charged_words():
-    negative_words = [
-        line.rstrip("\n") for line in open("charged_dict/negative_words.txt")
-    ]
-    positive_words = [
-        line.rstrip("\n") for line in open("charged_dict/positive_words.txt")
-    ]
+    with open("charged_dict/negative_words.txt") as f:
+        negative_words = [line.rstrip("\n") for line in f]
+
+    with open("charged_dict/positive_words.txt") as f:
+        positive_words = [line.rstrip("\n") for line in f]
+
     return [*negative_words, *positive_words]
 
 
