@@ -4,7 +4,6 @@ from enum import Enum
 
 import aiohttp
 import aionursery
-import async_timeout
 import pymorphy2
 from adapters import SANITIZERS, ArticleNotFound
 from aiohttp import web

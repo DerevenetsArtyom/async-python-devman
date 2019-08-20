@@ -13,13 +13,14 @@ def _clean_word(word):
 async def split_by_words(morph, text):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
     words = []
-    for word in text.split():
-        cleaned_word = _clean_word(word)
-        async with async_timeout.timeout(3):
+
+    async with async_timeout.timeout(3):
+        for word in text.split():
+            cleaned_word = _clean_word(word)
             normalized_word = morph.parse(cleaned_word)[0].normal_form
 
-        if len(normalized_word) > 2 or normalized_word == "не":
-            words.append(normalized_word)
+            if len(normalized_word) > 2 or normalized_word == "не":
+                words.append(normalized_word)
     return words
 
 
