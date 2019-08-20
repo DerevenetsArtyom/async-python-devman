@@ -45,10 +45,8 @@ class ProcessingStatus(Enum):
 
 
 async def fetch(session, url):
-    async with async_timeout.timeout(5):
-        async with session.get(url) as response:
-            response.raise_for_status()
-            return await response.text()
+    async with session.get(url, raise_for_status=True, timeout=6) as response:
+        return await response.text()
 
 
 async def process_article(session, morph, charged_words, url):
@@ -127,11 +125,11 @@ async def get_parsed_articles(morph, charged_words, urls):
 
 
 async def articles_handler(morph, charged_words, request):
-    urls_params = request.rel_url.query["urls"]
-    urls_list = urls_params.split(",")
-
+    urls_params = request.rel_url.query.get("urls")
     if not urls_params:
         return web.json_response(data={"error": "no one urls"}, status=400)
+
+    urls_list = urls_params.split(",")
 
     if len(urls_list) > 10:
         return web.json_response(
