@@ -18,6 +18,10 @@
 ```bash
 $ pip install -r requirements.txt
 ```
+Если сайт [ИНОСМИ.РУ](https://inosmi.ru/) недоступен в вашем регионе, нужно установить TOR. Инструкции по установке:
+* https://jarroba.com/anonymous-scraping-by-tor-network/
+* https://stackoverflow.com/questions/55191914/how-to-connect-to-onion-sites-using-python-aiohttp
+
 
 ## Как запустить
 
