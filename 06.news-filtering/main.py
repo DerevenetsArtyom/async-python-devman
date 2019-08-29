@@ -94,10 +94,7 @@ def get_charged_words():
 
 
 async def get_parsed_articles(morph, charged_words, urls):
-    # Can't connect directly because of blocked site, use TOR
-    connector = SocksConnector.from_url("socks5://127.0.0.1:9050", rdns=True)
-
-    async with aiohttp.ClientSession(connector=connector) as session:
+    async with aiohttp.ClientSession() as session:
         tasks = []
         async with aionursery.Nursery() as nursery:
             for url in urls:
