@@ -4,6 +4,7 @@ from enum import Enum
 
 import aiohttp
 import aionursery
+import async_timeout
 import pymorphy2
 from adapters import SANITIZERS, ArticleNotFound
 from aiohttp import web
@@ -69,7 +70,8 @@ async def process_article(session, morph, charged_words, url):
 
     if link_fetched:
         try:
-            article_words = await split_by_words(morph, clean_plaintext)
+            async with async_timeout.timeout(3):
+                article_words = await split_by_words(morph, clean_plaintext)
             words_count = len(article_words)
             score = calculate_jaundice_rate(article_words, charged_words)
         except asyncio.TimeoutError:
