@@ -1,16 +1,25 @@
+import os
 import json
 
 import trio
 from sys import stderr
 from trio_websocket import open_websocket_url, ConnectionClosed
 
-
 message = {
-    "busId": "156", "lat": None, "lng": None, "route": 156
+    "busId": None, "lat": None, "lng": None, "route": None
 }
 
-with open("routes/156.json") as f:
-    bus_info = json.loads(f.read())
+
+def load_routes(directory_path='routes'):
+    for filename in os.listdir(directory_path):
+        if filename.endswith(".json"):
+            filepath = os.path.join(directory_path, filename)
+            with open(filepath, 'r', encoding='utf8') as file:
+                yield json.load(file)
+
+
+# usage example
+# for route in load_routes()[:10]:
 
 
 async def main():
@@ -33,5 +42,3 @@ async def main():
 
 
 trio.run(main)
-
-
