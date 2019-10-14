@@ -21,15 +21,17 @@ def load_routes(directory_path='routes'):
 
 async def run_bus(url, route):
     async with open_websocket_url(url) as ws:
-        for coo in route["coordinates"]:
-            message["busId"] = route['name']
-            message["lat"] = coo[0]
-            message["lng"] = coo[1]
-            message["route"] = route['name']
 
-            await ws.send_message(json.dumps(message, ensure_ascii=True))
+        # infinite loop to circle the route (start again after finish)
+        while True:
+            for coo in route["coordinates"]:
+                message["busId"] = route['name']
+                message["lat"] = coo[0]
+                message["lng"] = coo[1]
+                message["route"] = route['name']
 
-            await trio.sleep(0.1)
+                await ws.send_message(json.dumps(message, ensure_ascii=True))
+                await trio.sleep(0.1)
 
 
 async def main():
