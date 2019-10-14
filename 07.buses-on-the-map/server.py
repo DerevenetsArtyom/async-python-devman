@@ -28,7 +28,7 @@ async def talk_to_browser(request):
         except ConnectionClosed:
             pass
 
-        await trio.sleep(0.5)
+        await trio.sleep(0.1)
 
 
 async def receive_from_fake(request):
@@ -45,7 +45,7 @@ async def receive_from_fake(request):
 
         # Update data in global BUSES for each bus with received info
         BUSES[message["busId"]] = message
-        await trio.sleep(0.5)
+        await trio.sleep(0.1)
 
 
 async def main():

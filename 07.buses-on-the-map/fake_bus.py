@@ -29,7 +29,7 @@ async def run_bus(url, route):
 
             await ws.send_message(json.dumps(message, ensure_ascii=True))
 
-            await trio.sleep(0.5)
+            await trio.sleep(0.1)
 
 
 async def main():
