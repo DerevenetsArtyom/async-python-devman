@@ -19,27 +19,26 @@ def load_routes(directory_path='routes'):
                 yield json.load(file)
 
 
-async def run_bus(url, bus_id, route):
+async def run_bus(url, route):
     async with open_websocket_url(url) as ws:
-        message["busId"] = bus_id
-        message["lat"] = route["coordinates"][0]
-        message["lng"] = route["coordinates"][1]
-        message["route"] = route['name']
+        for coo in route["coordinates"]:
+            message["busId"] = route['name']
+            message["lat"] = coo[0]
+            message["lng"] = coo[1]
+            message["route"] = route['name']
 
-        await ws.send_message(json.dumps(message, ensure_ascii=True))
+            await ws.send_message(json.dumps(message, ensure_ascii=True))
+
+            await trio.sleep(0.5)
 
 
 async def main():
     socket_url = 'ws://127.0.0.1:8080'
     try:
-        while True:
+        async with trio.open_nursery() as nursery:
             for route in itertools.islice(load_routes(), 10):
                 try:
-                    async with trio.open_nursery() as nursery:
-                        nursery.start_soon(
-                            run_bus, socket_url, route['name'], route
-                        )
-                        await trio.sleep(0.5)
+                    nursery.start_soon(run_bus, socket_url, route)
                 except ConnectionClosed:
                     break
 
