@@ -4,9 +4,7 @@ import json
 
 message = {
     "msgType": "Buses",
-    "buses": [
-        {"busId": "c790сс", "lat": None, "lng": None, "route": "120"},
-    ]
+    "buses": [{"busId": "c790сс", "lat": None, "lng": None, "route": "120"}],
 }
 
 with open("routes/156.json") as f:
@@ -29,7 +27,7 @@ async def echo_server(request):
 
 
 async def main():
-    await serve_websocket(echo_server, '127.0.0.1', 8000, ssl_context=None)
+    await serve_websocket(echo_server, "127.0.0.1", 8000, ssl_context=None)
 
 
 trio.run(main)

@@ -8,7 +8,7 @@ message_to_browser = {
     "msgType": "Buses",
     "buses": [
         # {"busId": None, "lat": None, "lng": None, "route": None},
-    ]
+    ],
 }
 
 
@@ -21,7 +21,7 @@ async def talk_to_browser(request):
 
         message_to_browser["buses"] = list(BUSES.values())
         msg = json.dumps(message_to_browser)
-        print('talk_to_browser:', msg)
+        print("talk_to_browser:", msg)
 
         try:
             await ws.send_message(msg)
@@ -41,7 +41,7 @@ async def receive_from_fake(request):
             break
 
         message = json.loads(json_message)
-        print('receive_from_fake:', message)
+        print("receive_from_fake:", message)
 
         # Update data in global BUSES for each bus with received info
         BUSES[message["busId"]] = message
@@ -54,7 +54,7 @@ async def main():
     and sends it to the browser through 8000 port.
     """
 
-    host = '127.0.0.1'
+    host = "127.0.0.1"
 
     receive_from_fake_coro = functools.partial(
         serve_websocket, receive_from_fake, host, 8080, ssl_context=None
