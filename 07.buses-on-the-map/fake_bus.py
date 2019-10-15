@@ -6,8 +6,6 @@ import trio
 from sys import stderr
 from trio_websocket import open_websocket_url, ConnectionClosed
 
-message = {"busId": None, "lat": None, "lng": None, "route": None}
-
 
 def load_routes(directory_path="routes"):
     for filename in os.listdir(directory_path):
@@ -18,6 +16,8 @@ def load_routes(directory_path="routes"):
 
 
 async def run_bus(url, route):
+    message = {"busId": None, "lat": None, "lng": None, "route": None}
+
     async with open_websocket_url(url) as ws:
 
         # infinite loop to circle the route (start again after finish)
