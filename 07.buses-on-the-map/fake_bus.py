@@ -31,7 +31,7 @@ async def run_bus(url, bus_id, route):
         while True:
             for coo in route["coordinates"][start_offset:]:
                 message["busId"] = bus_id
-                message["route"] = bus_id
+                message["route"] = route['name']
                 message["lat"] = coo[0]
                 message["lng"] = coo[1]
 
