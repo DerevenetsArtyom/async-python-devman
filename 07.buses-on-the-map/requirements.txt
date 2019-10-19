@@ -1,2 +1,2 @@
 trio-websocket==0.8.0
-click==7.0
+asyncclick==7.0.9
