@@ -24,6 +24,17 @@ async def run_bus(bus_id, route, send_channel):  # PRODUCER
             await send_channel.send(message)
 
 
+async def send_updates(server_address, receive_channel):  # CONSUMER
+    # new function to gather and send data
+
+    # TODO: broken - open too many sockets
+
+    async with open_websocket_url(server_address) as ws:
+        async for value in receive_channel:
+            await ws.send_message(json.dumps(value, ensure_ascii=True))
+            await trio.sleep(1)
+
+
 async def main():
     socket_url = "ws://127.0.0.1:8080"
     buses_per_route = 5
