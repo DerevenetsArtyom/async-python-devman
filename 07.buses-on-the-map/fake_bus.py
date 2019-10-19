@@ -38,15 +38,18 @@ async def send_updates(server_address, receive_channel):  # CONSUMER
 
 # v — настройка логирования
 @click.command()
-@click.option("--server", default='ws://127.0.0.1:8080', help="Server address")
-@click.option("--routes_number", default=5, help="Amount of routes")
-@click.option("--buses_per_route", default=5, help="Amount of buses per route")
+@click.option("--server", default='ws://127.0.0.1:8080',
+              show_default=True, type=str, help="Server address")
+@click.option("--routes_number", default=5,
+              show_default=True, type=int, help="Amount of routes")
+@click.option("--buses_per_route", default=5,
+              show_default=True, type=int, help="Amount of buses per route")
 @click.option("--websockets_number", default=5,
-              help="Amount of opened websockets")
-@click.option("--emulator_id", default='',
+              show_default=True, type=int, help="Amount of opened websockets")
+@click.option("--emulator_id", default='', type=str, show_default=True,
               help="Prefix to 'busId' in case of several instances fake_bus.py")
-@click.option("--refresh_timeout", default=0,
-              help="Delay of server coordinates refreshing")
+@click.option("--refresh_timeout", default=0, show_default=True,
+              type=int, help="Delay of server coordinates refreshing")
 async def main(server, routes_number, buses_per_route, websockets_number,
                emulator_id, refresh_timeout):
     mem_channels = []
