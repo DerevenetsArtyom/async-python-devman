@@ -8,23 +8,20 @@ from trio_websocket import open_websocket_url, ConnectionClosed
 from utils import generate_bus_id, load_routes
 
 
-async def run_bus(url, bus_id, route):
-    message = {
-        "busId": None, "lat": None, "lng": None, "route": None
-    }
+async def run_bus(bus_id, route, send_channel):  # PRODUCER
+    message = {"busId": None, "lat": None, "lng": None, "route": None}
+
     start_offset = random.randrange(len(route["coordinates"]))
 
-    async with open_websocket_url(url) as ws:
-        # infinite loop to circle the route (start again after finish)
-        while True:
-            for coo in route["coordinates"][start_offset:]:
-                message["busId"] = bus_id
-                message["route"] = route['name']
-                message["lat"] = coo[0]
-                message["lng"] = coo[1]
+    # infinite loop to circle the route (start again after finish)
+    while True:
+        for coo in route["coordinates"][start_offset:]:
+            message["busId"] = bus_id
+            message["route"] = route['name']
+            message["lat"] = coo[0]
+            message["lng"] = coo[1]
 
-                await ws.send_message(json.dumps(message, ensure_ascii=True))
-                # await trio.sleep(1)
+            await send_channel.send(message)
 
 
 async def main():
