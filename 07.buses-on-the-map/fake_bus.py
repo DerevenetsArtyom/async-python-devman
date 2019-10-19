@@ -1,7 +1,7 @@
 import json
 import itertools
 import random
-import click
+import asyncclick as click
 
 import trio
 from sys import stderr
@@ -76,5 +76,4 @@ async def main(server, routes_number, buses_per_route, websockets_number,
         print("Connection attempt failed: %s" % ose, file=stderr)
 
 
-if __name__ == '__main__':
-    trio.run(main)
+main(_anyio_backend="trio")
