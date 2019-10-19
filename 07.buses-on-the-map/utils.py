@@ -10,5 +10,7 @@ def load_routes(directory_path="routes"):
                 yield json.load(file)
 
 
-def generate_bus_id(route_id, bus_index):
+def generate_bus_id(emulator_id, route_id, bus_index):
+    if emulator_id:
+        return f"{emulator_id}-{route_id}-{bus_index}"
     return f"{route_id}-{bus_index}"

@@ -1,6 +1,7 @@
 import json
 import itertools
 import random
+import click
 
 import trio
 from sys import stderr
@@ -35,12 +36,19 @@ async def send_updates(server_address, receive_channel):  # CONSUMER
             await trio.sleep(1)
 
 
-async def main():
-    socket_url = "ws://127.0.0.1:8080"
-    buses_per_route = 10
-    routes_number = 5
-    websockets_number = 5
-
+# v — настройка логирования
+@click.command()
+@click.option("--server", default='ws://127.0.0.1:8080', help="Server address")
+@click.option("--routes_number", default=5, help="Amount of routes")
+@click.option("--buses_per_route", default=5, help="Amount of buses per route")
+@click.option("--websockets_number", default=5,
+              help="Amount of opened websockets")
+@click.option("--emulator_id", default='',
+              help="Prefix to 'busId' in case of several instances fake_bus.py")
+@click.option("--refresh_timeout", default=0,
+              help="Delay of server coordinates refreshing")
+async def main(server, routes_number, buses_per_route, websockets_number,
+               emulator_id, refresh_timeout):
     mem_channels = []
     for _ in range(websockets_number):
         mem_channels.append(trio.open_memory_channel(0))
@@ -48,10 +56,10 @@ async def main():
     try:
         async with trio.open_nursery() as nursery:
 
-            for bus_index in range(1, buses_per_route + 1):
+            for bus in range(1, buses_per_route + 1):
                 for route in itertools.islice(load_routes(), routes_number):
 
-                    bus_id = generate_bus_id(route['name'], bus_index)
+                    bus_id = generate_bus_id(emulator_id, route['name'], bus)
 
                     # Pick random channel for every bus
                     send_channel, receive_channel = random.choice(mem_channels)
@@ -59,7 +67,7 @@ async def main():
                     try:
                         nursery.start_soon(run_bus, bus_id, route, send_channel)
                         nursery.start_soon(
-                            send_updates, socket_url, receive_channel
+                            send_updates, server, receive_channel
                         )
                     except ConnectionClosed:
                         break
@@ -68,4 +76,5 @@ async def main():
         print("Connection attempt failed: %s" % ose, file=stderr)
 
 
-trio.run(main)
+if __name__ == '__main__':
+    trio.run(main)
