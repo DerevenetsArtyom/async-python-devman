@@ -37,18 +37,30 @@ async def send_updates(server_address, receive_channel):  # CONSUMER
 
 async def main():
     socket_url = "ws://127.0.0.1:8080"
-    buses_per_route = 5
+    buses_per_route = 10
+    routes_number = 5
+    websockets_number = 5
+
+    mem_channels = []
+    for _ in range(websockets_number):
+        mem_channels.append(trio.open_memory_channel(0))
 
     try:
         async with trio.open_nursery() as nursery:
 
             for bus_index in range(1, buses_per_route + 1):
-                for route in itertools.islice(load_routes(), 10):
+                for route in itertools.islice(load_routes(), routes_number):
 
                     bus_id = generate_bus_id(route['name'], bus_index)
 
+                    # Pick random channel for every bus
+                    send_channel, receive_channel = random.choice(mem_channels)
+
                     try:
-                        nursery.start_soon(run_bus, socket_url, bus_id, route)
+                        nursery.start_soon(run_bus, bus_id, route, send_channel)
+                        nursery.start_soon(
+                            send_updates, socket_url, receive_channel
+                        )
                     except ConnectionClosed:
                         break
 
