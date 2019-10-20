@@ -17,18 +17,17 @@ BUSES = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
 async def talk_to_browser(request):
     ws = await request.accept()
-    if BUSES:
+    while True:
         message_to_browser["buses"] = list(BUSES.values())
         msg = json.dumps(message_to_browser)
-        print("talk_to_browser:", msg)
-
         try:
+            print("talk_to_browser:", msg)
             await ws.send_message(msg)
         except ConnectionClosed:
             print("talk_to_browser: ConnectionClosed")
-            pass
+            break
 
-        await trio.sleep(0.1)
+        await trio.sleep(1)
 
 
 async def receive_from_fake(request):
