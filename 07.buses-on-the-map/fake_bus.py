@@ -88,26 +88,29 @@ async def main(
     emulator_id,
     refresh_timeout,
 ):
-    mem_channels = []
-    for _ in range(websockets_number):
-        mem_channels.append(trio.open_memory_channel(0))
+    send_channels = []
 
     try:
         async with trio.open_nursery() as nursery:
+
+            # Prepare memory channels: separate task for every 'receive_channel'
+            # and collect 'send_channel's to be randomly selected afterwards
+            for _ in range(websockets_number):
+                send_channel, receive_channel = trio.open_memory_channel(0)
+                send_channels.append(send_channel)
+
+                nursery.start_soon(send_updates, server, receive_channel)
 
             for bus in range(1, buses_per_route + 1):
                 for route in itertools.islice(load_routes(), routes_number):
 
                     bus_id = generate_bus_id(emulator_id, route["name"], bus)
 
-                    # Pick random channel for every bus
-                    send_channel, receive_channel = random.choice(mem_channels)
+                    # Pick random 'send' channel for every bus
+                    send_channel = random.choice(send_channels)
 
                     try:
                         nursery.start_soon(run_bus, bus_id, route, send_channel)
-                        nursery.start_soon(
-                            send_updates, server, receive_channel
-                        )
                     except ConnectionClosed:
                         break
 
