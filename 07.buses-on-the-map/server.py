@@ -25,7 +25,7 @@ async def talk_to_browser(request):
         try:
             await ws.send_message(msg)
         except ConnectionClosed:
-            print('talk_to_browser: ConnectionClosed')
+            print("talk_to_browser: ConnectionClosed")
             pass
 
         await trio.sleep(0.1)
@@ -38,7 +38,7 @@ async def receive_from_fake(request):
         try:
             json_message = await ws.get_message()  # "busId","lat","lng","route"
         except ConnectionClosed:
-            print('receive_from_fake: ConnectionClosed')
+            print("receive_from_fake: ConnectionClosed")
             break
 
         message = json.loads(json_message)
