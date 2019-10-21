@@ -11,13 +11,15 @@ from utils import generate_bus_id, load_routes
 
 # PRODUCER
 async def run_bus(bus_id, route, send_channel):
+    # Template for sending to the channel with updated values each time
     message = {"busId": None, "lat": None, "lng": None, "route": None}
 
-    start_offset = random.randrange(len(route["coordinates"]))
+    coordinates = route["coordinates"]
+    start_offset = random.randrange(len(coordinates))
 
     # infinite loop to circle the route (start again after finish)
     while True:
-        for coo in route["coordinates"][start_offset:]:
+        for coo in coordinates[start_offset:]:
             message["busId"] = bus_id
             message["route"] = route["name"]
             message["lat"] = coo[0]
@@ -25,11 +27,12 @@ async def run_bus(bus_id, route, send_channel):
 
             await send_channel.send(message)
 
-        # Reset offset after first loop to start the new drive from start
+        # Reset offset after first iteration to start from the beginning
         start_offset = 0
 
 
-async def send_updates(server_address, receive_channel):  # CONSUMER
+# CONSUMER
+async def send_updates(server_address, receive_channel):
     # new function to gather and send data
 
     async with open_websocket_url(server_address) as ws:
