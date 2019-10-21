@@ -9,7 +9,8 @@ from trio_websocket import open_websocket_url, ConnectionClosed
 from utils import generate_bus_id, load_routes
 
 
-async def run_bus(bus_id, route, send_channel):  # PRODUCER
+# PRODUCER
+async def run_bus(bus_id, route, send_channel):
     message = {"busId": None, "lat": None, "lng": None, "route": None}
 
     start_offset = random.randrange(len(route["coordinates"]))
@@ -24,11 +25,12 @@ async def run_bus(bus_id, route, send_channel):  # PRODUCER
 
             await send_channel.send(message)
 
+        # Reset offset after first loop to start the new drive from start
+        start_offset = 0
+
 
 async def send_updates(server_address, receive_channel):  # CONSUMER
     # new function to gather and send data
-
-    # TODO: broken - open too many sockets
 
     async with open_websocket_url(server_address) as ws:
         async for value in receive_channel:
