@@ -86,3 +86,22 @@
     * Evaluation the objectivity of the articles
     * Acceleration the analysis to the maximum
     * JSON-API for browser plugin
+
+* ## [7. Watching the buses](07.buses-on-the-map/README.md)
+    There is a socially and environmentally responsible citizen. He wants to make people use cars less.  
+    If we switch to public transport, the traffic jams will be less and the air will be cleaner.  
+
+    That Hero has come up with an application that will make public transport trips more convenient:  
+    it will show in real time where this transport is located.   
+    Then you can not wait long for the right bus, and come just in time for its arrival.
+    
+    Hero knows that all buses are equipped with GPS-sensors, which share the location.  
+    Their coordinates can be recognized and displayed on the map in the browser.
+    There is only one thing left - the server part. Let's help to make the city cleaner!
+    
+    In order for buses to move around the map, not only do they need coordinates, but they also need to be constantly updated.  
+    Moreover, it is necessary to update the position of 20 thousand buses at once.
+
+    * Gather information about the coordinates of buses and other transport
+    * Pack it up
+    * Send to all browsers connected to the server safely, without lags or hangs
