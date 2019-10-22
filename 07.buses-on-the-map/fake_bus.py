@@ -1,3 +1,4 @@
+import contextlib
 import json
 import itertools
 import random
@@ -123,4 +124,5 @@ async def main(
         print("Connection attempt failed: %s" % ose, file=stderr)
 
 
-main(_anyio_backend="trio")
+with contextlib.suppress(KeyboardInterrupt):
+    main(_anyio_backend="trio")

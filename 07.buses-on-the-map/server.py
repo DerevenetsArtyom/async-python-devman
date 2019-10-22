@@ -1,3 +1,4 @@
+import contextlib
 import json
 import functools
 
@@ -68,4 +69,5 @@ async def main():
         nursery.start_soon(talk_to_browser_coro)
 
 
-trio.run(main)
+with contextlib.suppress(KeyboardInterrupt):
+    trio.run(main)
