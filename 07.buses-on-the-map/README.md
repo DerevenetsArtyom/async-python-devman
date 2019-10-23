@@ -1,42 +1,42 @@
-# Автобусы на карте Москвы
+# Buses on the map of Moscow
 
-Веб-приложение показывает передвижение автобусов на карте Москвы.
+Web application shows the movement of buses on the map of Moscow.
 
 <img src="screenshots/buses.gif">
 
-## Как запустить
+## How to launch
 
-- Скачайте код
-- Откройте в браузере файл index.html
+- Download the code
+- Open the index.html file in your browser
 
 
-## Настройки
+# Settings
 
-Внизу справа на странице можно включить отладочный режим логгирования и указать нестандартный адрес веб-сокета.
+At the bottom right of the page, you can enable logging debug mode and specify a non-standard web socket address.
 
 <img src="screenshots/settings.png">
 
-Настройки сохраняются в Local Storage браузера и не пропадают после обновления страницы. Чтобы сбросить настройки удалите ключи из Local Storage с помощью Chrome Dev Tools —> Вкладка Application —> Local Storage.
+The settings are saved in the Local Storage of the browser and do not disappear after the page is refreshed. To reset the settings, remove the keys from the Local Storage using Chrome Dev Tools -> Application tab -> Local Storage.
 
-Если что-то работает не так, как ожидалось, то начните с включения отладочного режима логгирования.
+If something does not work as expected, start by enabling debugging.
 
-## Формат данных
+## Data format
 
-Фронтенд ожидает получить от сервера JSON сообщение со списком автобусов:
+Frontend expects to receive JSON message with a list of buses from server:
 
 ```js
 {
   "msgType": "Buses",
   "buses": [
     {"busId": "c790сс", "lat": 55.7500, "lng": 37.600, "route": "120"},
-    {"busId": "a134aa", "lat": 55.7494, "lng": 37.621, "route": "670к"},
+    {"busId": "a134aa", "lat": 55.7494, "lng": 37.621, "route": "670к"}
   ]
 }
 ```
 
-Те автобусы, что не попали в список `buses` последнего сообщения от сервера будут удалены с карты.
+Those buses that are not on the `buses` list of the last message from the server will be removed from the map.
 
-Фронтенд отслеживает перемещение пользователя по карте и отправляет на сервер новые координаты окна:
+The frontend tracks the movement of the user on the map and sends to the server new coordinates of the window:
 
 ```js
 {
@@ -45,19 +45,19 @@
     "east_lng": 37.65563964843751,
     "north_lat": 55.77367652953477,
     "south_lat": 55.72628839374007,
-    "west_lng": 37.54440307617188,
-  },
+    "west_lng": 37.54440307617188
+  }
 }
 ```
 
 
 
-## Используемые библиотеки
+## Used libraries
 
-- [Leaflet](https://leafletjs.com/) — отрисовка карты
-- [loglevel](https://www.npmjs.com/package/loglevel) для логгирования
+- [Leaflet](https://leafletjs.com/) - Drawing a map
+- [loglevel](https://www.npmjs.com/package/loglevel) for logging
 
 
-## Цели проекта
+# The goals of the project
 
-Код написан в учебных целях — это урок в курсе по Python и веб-разработке на сайте [Devman](https://dvmn.org).
+The code is written for training purposes and is a lesson in a course on Python and web development at [Devman](https://dvmn.org).
