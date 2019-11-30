@@ -13,13 +13,13 @@ message_to_browser = {
 }
 
 
-BUSES = {}  # global variable to collect buses info -  {bus_id: bus_info}
+buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
 
 async def talk_to_browser(request):
     ws = await request.accept()
     while True:
-        message_to_browser["buses"] = list(BUSES.values())
+        message_to_browser["buses"] = list(buses.values())
         msg = json.dumps(message_to_browser)
         try:
             print("talk_to_browser:", msg)
@@ -44,8 +44,8 @@ async def receive_from_fake(request):
         message = json.loads(json_message)
         print("receive_from_fake:", message)
 
-        # Update data in global BUSES for each bus with received info
-        BUSES[message["busId"]] = message
+        # Update data in global 'buses' for each bus with received info
+        buses[message["busId"]] = message
         await trio.sleep(0.1)
 
 
