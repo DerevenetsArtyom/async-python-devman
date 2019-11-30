@@ -5,18 +5,15 @@ import functools
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
 
-message_to_browser = {
-    "msgType": "Buses",
-    "buses": [
-        # {"busId": None, "lat": None, "lng": None, "route": None},
-    ],
-}
-
-
 buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
 
 async def talk_to_browser(request):
+    message_to_browser = {
+        "msgType": "Buses",
+        # {"busId": None, "lat": None, "lng": None, "route": None},
+        "buses": [],
+    }
     ws = await request.accept()
     while True:
         message_to_browser["buses"] = list(buses.values())
