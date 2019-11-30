@@ -20,10 +20,12 @@ async def run_bus(bus_id, route, send_channel):
     # infinite loop to circle the route (start again after finish)
     while True:
         for latitude, longitude in coordinates[start_offset:]:
-            message["busId"] = bus_id
-            message["route"] = route["name"]
-            message["lat"] = latitude
-            message["lng"] = longitude
+            message.update({
+                "busId": bus_id,
+                "route": route["name"],
+                "lat": latitude,
+                "lng": longitude
+            })
 
             await send_channel.send(message)
 
