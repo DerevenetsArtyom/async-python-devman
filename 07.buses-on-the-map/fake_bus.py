@@ -10,7 +10,6 @@ from trio_websocket import open_websocket_url, ConnectionClosed
 from utils import generate_bus_id, load_routes
 
 
-# PRODUCER
 async def run_bus(bus_id, route, send_channel):
     # Template for sending to the channel with updated values each time
     message = {"busId": None, "lat": None, "lng": None, "route": None}
@@ -32,10 +31,7 @@ async def run_bus(bus_id, route, send_channel):
         start_offset = 0
 
 
-# CONSUMER
 async def send_updates(server_address, receive_channel):
-    # new function to gather and send data
-
     async with open_websocket_url(server_address) as ws:
         async for value in receive_channel:
             await ws.send_message(json.dumps(value, ensure_ascii=True))
@@ -107,10 +103,14 @@ async def main(
 
                 nursery.start_soon(send_updates, server, receive_channel)
 
-            for bus in range(1, buses_per_route + 1):
+            for bus_number in range(1, buses_per_route + 1):
                 for route in itertools.islice(load_routes(), routes_number):
 
-                    bus_id = generate_bus_id(emulator_id, route["name"], bus)
+                    bus_id = generate_bus_id(
+                        emulator_id,
+                        route["name"],
+                        bus_number
+                    )
 
                     # Pick random 'send' channel for every bus
                     send_channel = random.choice(send_channels)
