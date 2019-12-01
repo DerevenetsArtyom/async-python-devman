@@ -7,7 +7,7 @@ import asyncclick as click
 import trio
 from sys import stderr
 from trio_websocket import open_websocket_url, ConnectionClosed
-from utils import generate_bus_id, load_routes
+from utils import generate_bus_id, load_routes, relaunch_on_disconnect
 
 
 async def run_bus(bus_id, route, send_channel):
@@ -33,6 +33,8 @@ async def run_bus(bus_id, route, send_channel):
         start_offset = 0
 
 
+
+@relaunch_on_disconnect
 async def send_updates(server_address, receive_channel):
     async with open_websocket_url(server_address) as ws:
         async for value in receive_channel:
@@ -107,7 +109,6 @@ async def main(
 
             for bus_number in range(1, buses_per_route + 1):
                 for route in itertools.islice(load_routes(), routes_number):
-
                     bus_id = generate_bus_id(
                         emulator_id,
                         route["name"],
