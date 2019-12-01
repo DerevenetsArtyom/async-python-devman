@@ -28,6 +28,22 @@ async def talk_to_browser(request):
         await trio.sleep(1)
 
 
+async def listen_browser(request):
+    """Receive a message with window coordinates from browser"""
+
+    ws = await request.accept()
+
+    while True:
+        try:
+            json_message = await ws.get_message()
+        except ConnectionClosed:
+            print("listen_browser: ConnectionClosed")
+            break
+
+        message = json.loads(json_message)
+        print("listen_browser:", message)
+
+
 async def receive_from_fake(request):
     ws = await request.accept()
 
@@ -60,10 +76,14 @@ async def main():
     talk_to_browser_coro = functools.partial(
         serve_websocket, talk_to_browser, host, 8000, ssl_context=None
     )
+    listen_browser_coro = functools.partial(
+        serve_websocket, listen_browser, host, 8000, ssl_context=None
+    )
 
     async with trio.open_nursery() as nursery:
         nursery.start_soon(receive_from_fake_coro)
-        nursery.start_soon(talk_to_browser_coro)
+        # nursery.start_soon(talk_to_browser_coro)
+        nursery.start_soon(listen_browser_coro)
 
 
 with contextlib.suppress(KeyboardInterrupt):
