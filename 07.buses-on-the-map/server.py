@@ -28,6 +28,14 @@ async def talk_to_browser(request):
         await trio.sleep(1)
 
 
+def is_inside(bounds, lat, lng):
+    if bounds['south_lat'] < lat < bounds['north_lat']:
+        if bounds['west_lng'] < lng < bounds['east_lng']:
+            print('INSIDE')
+            return True
+    return False
+
+
 async def listen_browser(request):
     """Receive a message with window coordinates from browser"""
 
@@ -42,6 +50,13 @@ async def listen_browser(request):
 
         message = json.loads(json_message)
         print("listen_browser:", message)
+
+        inside = []
+        bounds = message['data']
+        for bus_id, bus_info in buses.items():
+            if is_inside(bounds, bus_info["lat"], bus_info["lng"]):
+                inside.append({bus_id: bus_info})
+                print('inside', len(inside))
 
 
 async def receive_from_fake(request):
