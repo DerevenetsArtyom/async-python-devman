@@ -1,6 +1,5 @@
 import contextlib
 import json
-import functools
 
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
@@ -59,18 +58,18 @@ async def listen_browser(request):
                 print('inside', len(inside))
 
 
-async def receive_from_fake(request):
+async def handle_simulator(request):
     ws = await request.accept()
 
     while True:
         try:
             json_message = await ws.get_message()  # "busId","lat","lng","route"
         except ConnectionClosed:
-            print("receive_from_fake: ConnectionClosed")
+            print("handle_simulator: ConnectionClosed")
             break
 
         message = json.loads(json_message)
-        print("receive_from_fake:", message)
+        print("handle_simulator:", message)
 
         # Update data in global 'buses' for each bus with received info
         buses[message["busId"]] = message
@@ -78,27 +77,19 @@ async def receive_from_fake(request):
 
 
 async def main():
-    """
-    Script receives data from simulator through 8080 port,
-    and sends it to the browser through 8000 port.
-    """
+    browser_host = simulator_host = "127.0.0.1"
 
-    host = "127.0.0.1"
-
-    receive_from_fake_coro = functools.partial(
-        serve_websocket, receive_from_fake, host, 8080, ssl_context=None
-    )
-    talk_to_browser_coro = functools.partial(
-        serve_websocket, talk_to_browser, host, 8000, ssl_context=None
-    )
-    listen_browser_coro = functools.partial(
-        serve_websocket, listen_browser, host, 8000, ssl_context=None
-    )
+    browser_port = 8000  # sends data to the browser through 8000 port
+    simulator_port = 8080  # receives data from simulator through 8080 port
 
     async with trio.open_nursery() as nursery:
-        nursery.start_soon(receive_from_fake_coro)
-        # nursery.start_soon(talk_to_browser_coro)
-        nursery.start_soon(listen_browser_coro)
+        nursery.start_soon(
+            serve_websocket, handle_simulator, simulator_host, simulator_port, None
+        )
+        nursery.start_soon(
+            serve_websocket, listen_browser, browser_host, browser_port, None
+        )
+        # nursery.start_soon(serve_websocket, talk_to_browser, host, 8000, None)
 
 
 with contextlib.suppress(KeyboardInterrupt):
