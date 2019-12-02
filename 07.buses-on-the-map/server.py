@@ -7,18 +7,20 @@ from trio_websocket import serve_websocket, ConnectionClosed
 buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
 
+async def send_buses(ws):
+    message_to_browser = dict(msgType="Buses", buses=[])
+
+    message_to_browser["buses"] = list(buses.values())
+    msg = json.dumps(message_to_browser)
+
+    print("send_buses:", msg)
+    await ws.send_message(msg)
+
+
 async def talk_to_browser(ws):
-    message_to_browser = {
-        "msgType": "Buses",
-        # {"busId": None, "lat": None, "lng": None, "route": None},
-        "buses": [],
-    }
     while True:
-        message_to_browser["buses"] = list(buses.values())
-        msg = json.dumps(message_to_browser)
         try:
-            print("talk_to_browser:", msg)
-            await ws.send_message(msg)
+            await send_buses(ws)
         except ConnectionClosed:
             print("talk_to_browser: ConnectionClosed")
             break
@@ -29,7 +31,6 @@ async def talk_to_browser(ws):
 def is_inside(bounds, lat, lng):
     if bounds['south_lat'] < lat < bounds['north_lat']:
         if bounds['west_lng'] < lng < bounds['east_lng']:
-            print('INSIDE')
             return True
     return False
 
