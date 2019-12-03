@@ -18,32 +18,47 @@ class Bus:
 
 @dataclass
 class WindowBounds:
-    south_lat: float
-    north_lat: float
-    west_lng: float
-    east_lng: float
+    south_lat: float = 0.0
+    north_lat: float = 0.0
+    west_lng: float = 0.0
+    east_lng: float = 0.0
 
     def is_inside(self, lat, lng):
         lat_inside = self.south_lat < lat < self.north_lat
         lng_inside = self.west_lng < lng < self.east_lng
         return lat_inside and lng_inside
 
+    def update(self, south_lat, north_lat, west_lng, east_lng):
+        print('update', south_lat, north_lat, west_lng, east_lng)
+        self.south_lat = south_lat
+        self.north_lat = north_lat
+        self.west_lng = west_lng
+        self.east_lng = east_lng
 
-async def send_buses(ws):
+
+async def send_buses(ws, bounds):
     # TODO: add here buses filtering by bounds
     message_to_browser = dict(msgType="Buses", buses=[])
 
     message_to_browser["buses"] = list(buses.values())
     msg = json.dumps(message_to_browser)
 
+    # inside = []
+    # for bus_id, bus_info in buses.items():
+    #     if is_inside(bounds, bus_info["lat"], bus_info["lng"]):
+    #         inside.append({bus_id: bus_info})
+    #         print('inside', len(inside))
+
     print("send_buses:", msg)
     await ws.send_message(msg)
 
 
-async def talk_to_browser(ws):
+async def talk_to_browser(ws, bounds):
+    """Send buses data to browser every second according to current bounds"""
+
     while True:
         try:
-            await send_buses(ws)
+            await send_buses(ws, bounds)
         except ConnectionClosed:
             print("talk_to_browser: ConnectionClosed")
             break
@@ -58,8 +73,8 @@ def is_inside(bounds, lat, lng):
     return False
 
 
-async def listen_browser(ws):
-    """Receive a message with window coordinates from browser"""
+async def listen_browser(ws, bounds):
+    """Receive a message with window bounds from browser and update it"""
 
     while True:
         try:
@@ -71,22 +86,18 @@ async def listen_browser(ws):
         message = json.loads(json_message)
         print("listen_browser:", message)
 
-        inside = []
-        bounds = message['data']
-        for bus_id, bus_info in buses.items():
-            if is_inside(bounds, bus_info["lat"], bus_info["lng"]):
-                inside.append({bus_id: bus_info})
-                print('inside', len(inside))
+        bounds.update(**message['data'])
 
 
 async def handle_browser(request):
     """Responsible for communication with browser: sena and receive data"""
 
+    bounds = WindowBounds()
     ws = await request.accept()
 
     async with trio.open_nursery() as nursery:
-        nursery.start_soon(listen_browser, ws)
-        nursery.start_soon(talk_to_browser, ws)
+        nursery.start_soon(listen_browser, ws, bounds)
+        nursery.start_soon(talk_to_browser, ws, bounds)
 
 
 async def handle_simulator(request):
