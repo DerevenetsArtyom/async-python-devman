@@ -1,6 +1,6 @@
 import contextlib
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
@@ -59,7 +59,6 @@ async def send_buses(ws, bounds):
 
 async def talk_to_browser(ws, bounds):
     """Send buses data to browser every second according to current bounds"""
-
     while True:
         try:
             await send_buses(ws, bounds)
@@ -72,7 +71,6 @@ async def talk_to_browser(ws, bounds):
 
 async def listen_browser(ws, bounds):
     """Receive a message with window bounds from browser and update it"""
-
     while True:
         try:
             json_message = await ws.get_message()
@@ -87,8 +85,7 @@ async def listen_browser(ws, bounds):
 
 
 async def handle_browser(request):
-    """Responsible for communication with browser: sena and receive data"""
-
+    """Responsible for communication with browser: send and receive data"""
     bounds = WindowBounds()
     ws = await request.accept()
 
@@ -98,6 +95,7 @@ async def handle_browser(request):
 
 
 async def handle_simulator(request):
+    """Receive data from simulator and update it in 'buses' for each bus"""
     ws = await request.accept()
 
     while True:
@@ -108,13 +106,10 @@ async def handle_simulator(request):
             break
 
         message = json.loads(json_message)
-        # {'busId': '2-4', 'lat': 55.849.., 'lng': 37.368..., 'route': '2'}
         print("handle_simulator:", message)
 
         bus = Bus(**message)
-        # Update data in global 'buses' for each bus with received info
         buses.update({bus.busId: bus})
-        await trio.sleep(0.1)
 
 
 async def main():
