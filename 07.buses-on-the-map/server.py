@@ -1,6 +1,6 @@
 import contextlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
@@ -37,18 +37,22 @@ class WindowBounds:
 
 
 async def send_buses(ws, bounds):
-    # TODO: add here buses filtering by bounds
-    message_to_browser = dict(msgType="Buses", buses=[])
+    buses_inside = [
+        bus_info for _, bus_info in buses.items()
+        if bounds.is_inside(bus_info.lat, bus_info.lng)
+    ]
 
-    message_to_browser["buses"] = list(buses.values())
+    message_to_browser = {
+        "msgType": "Buses",
+        "buses": [{
+            "busId": bus.busId,
+            "lat": bus.lat,
+            "lng": bus.lng,
+            "route": bus.busId
+        } for bus in buses_inside]
+    }
+
     msg = json.dumps(message_to_browser)
-
-    # inside = []
-    # for bus_id, bus_info in buses.items():
-    #     if is_inside(bounds, bus_info["lat"], bus_info["lng"]):
-    #         inside.append({bus_id: bus_info})
-    #         print('inside', len(inside))
-
     print("send_buses:", msg)
     await ws.send_message(msg)
 
@@ -105,16 +109,18 @@ async def handle_simulator(request):
 
     while True:
         try:
-            json_message = await ws.get_message()  # "busId","lat","lng","route"
+            json_message = await ws.get_message()
         except ConnectionClosed:
             print("handle_simulator: ConnectionClosed")
             break
 
         message = json.loads(json_message)
+        # {'busId': '2-4', 'lat': 55.849.., 'lng': 37.368..., 'route': '2'}
         print("handle_simulator:", message)
 
+        bus = Bus(**message)
         # Update data in global 'buses' for each bus with received info
-        buses[message["busId"]] = message
+        buses.update({bus.busId: bus})
         await trio.sleep(0.1)
 
 
