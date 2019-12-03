@@ -41,6 +41,7 @@ async def send_buses(ws, bounds):
         bus_info for _, bus_info in buses.items()
         if bounds.is_inside(bus_info.lat, bus_info.lng)
     ]
+    # TODO: logging (N buses inside bounds)
 
     message_to_browser = {
         "msgType": "Buses",
@@ -63,6 +64,7 @@ async def talk_to_browser(ws, bounds):
         try:
             await send_buses(ws, bounds)
         except ConnectionClosed:
+            # TODO: logging
             print("talk_to_browser: ConnectionClosed")
             break
 
@@ -75,10 +77,12 @@ async def listen_browser(ws, bounds):
         try:
             json_message = await ws.get_message()
         except ConnectionClosed:
+            # TODO: logging
             print("listen_browser: ConnectionClosed")
             break
 
         message = json.loads(json_message)
+        # TODO: logging
         print("listen_browser:", message)
 
         bounds.update(**message['data'])
@@ -102,6 +106,7 @@ async def handle_simulator(request):
         try:
             json_message = await ws.get_message()
         except ConnectionClosed:
+            # TODO: logging
             print("handle_simulator: ConnectionClosed")
             break
 

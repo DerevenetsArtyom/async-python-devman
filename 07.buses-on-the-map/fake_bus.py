@@ -33,7 +33,6 @@ async def run_bus(bus_id, route, send_channel):
         start_offset = 0
 
 
-
 @relaunch_on_disconnect
 async def send_updates(server_address, receive_channel):
     async with open_websocket_url(server_address) as ws:
@@ -42,7 +41,7 @@ async def send_updates(server_address, receive_channel):
             await trio.sleep(1)
 
 
-# v — настройка логирования
+# TODO: v — настройка логирования
 @click.command()
 @click.option(
     "--server",
@@ -124,6 +123,7 @@ async def main(
                         break
 
     except OSError as ose:
+        # TODO: logging
         print("Connection attempt failed: %s" % ose, file=stderr)
 
 
