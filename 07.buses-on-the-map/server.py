@@ -70,13 +70,6 @@ async def talk_to_browser(ws, bounds):
         await trio.sleep(1)
 
 
-def is_inside(bounds, lat, lng):
-    if bounds['south_lat'] < lat < bounds['north_lat']:
-        if bounds['west_lng'] < lng < bounds['east_lng']:
-            return True
-    return False
-
-
 async def listen_browser(ws, bounds):
     """Receive a message with window bounds from browser and update it"""
 
