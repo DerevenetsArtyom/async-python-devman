@@ -1,5 +1,6 @@
 import contextlib
 import json
+from dataclasses import dataclass
 
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
@@ -7,7 +8,29 @@ from trio_websocket import serve_websocket, ConnectionClosed
 buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
 
+@dataclass
+class Bus:
+    busId: str
+    route: str
+    lat: float
+    lng: float
+
+
+@dataclass
+class WindowBounds:
+    south_lat: float
+    north_lat: float
+    west_lng: float
+    east_lng: float
+
+    def is_inside(self, lat, lng):
+        lat_inside = self.south_lat < lat < self.north_lat
+        lng_inside = self.west_lng < lng < self.east_lng
+        return lat_inside and lng_inside
+
+
 async def send_buses(ws):
+    # TODO: add here buses filtering by bounds
     message_to_browser = dict(msgType="Buses", buses=[])
 
     message_to_browser["buses"] = list(buses.values())
