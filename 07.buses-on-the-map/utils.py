@@ -33,7 +33,7 @@ def relaunch_on_disconnect(async_function):
 
             except (HandshakeError, ConnectionClosed) as e:
                 # TODO: logging
-                print('!!! relaunch_on_disconnect', type(e))
+                print("!!! relaunch_on_disconnect", type(e))
                 await trio.sleep(counter)
 
     return inner

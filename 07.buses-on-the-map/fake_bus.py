@@ -20,12 +20,14 @@ async def run_bus(bus_id, route, send_channel):
     # infinite loop to circle the route (start again after finish)
     while True:
         for latitude, longitude in coordinates[start_offset:]:
-            message.update({
-                "busId": bus_id,
-                "route": route["name"],
-                "lat": latitude,
-                "lng": longitude
-            })
+            message.update(
+                {
+                    "busId": bus_id,
+                    "route": route["name"],
+                    "lat": latitude,
+                    "lng": longitude,
+                }
+            )
 
             await send_channel.send(message)
 
@@ -109,9 +111,7 @@ async def main(
             for bus_number in range(1, buses_per_route + 1):
                 for route in itertools.islice(load_routes(), routes_number):
                     bus_id = generate_bus_id(
-                        emulator_id,
-                        route["name"],
-                        bus_number
+                        emulator_id, route["name"], bus_number
                     )
 
                     # Pick random 'send' channel for every bus

@@ -29,7 +29,7 @@ class WindowBounds:
         return lat_inside and lng_inside
 
     def update(self, south_lat, north_lat, west_lng, east_lng):
-        print('update', south_lat, north_lat, west_lng, east_lng)
+        print("update", south_lat, north_lat, west_lng, east_lng)
         self.south_lat = south_lat
         self.north_lat = north_lat
         self.west_lng = west_lng
@@ -38,19 +38,23 @@ class WindowBounds:
 
 async def send_buses(ws, bounds):
     buses_inside = [
-        bus_info for _, bus_info in buses.items()
+        bus_info
+        for _, bus_info in buses.items()
         if bounds.is_inside(bus_info.lat, bus_info.lng)
     ]
     # TODO: logging (N buses inside bounds)
 
     message_to_browser = {
         "msgType": "Buses",
-        "buses": [{
-            "busId": bus.busId,
-            "lat": bus.lat,
-            "lng": bus.lng,
-            "route": bus.busId
-        } for bus in buses_inside]
+        "buses": [
+            {
+                "busId": bus.busId,
+                "lat": bus.lat,
+                "lng": bus.lng,
+                "route": bus.busId,
+            }
+            for bus in buses_inside
+        ],
     }
 
     msg = json.dumps(message_to_browser)
@@ -85,7 +89,7 @@ async def listen_browser(ws, bounds):
         # TODO: logging
         print("listen_browser:", message)
 
-        bounds.update(**message['data'])
+        bounds.update(**message["data"])
 
 
 async def handle_browser(request):
