@@ -1,6 +1,7 @@
 import contextlib
 import json
 from dataclasses import dataclass
+import asyncclick as click
 
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
@@ -121,14 +122,38 @@ async def handle_simulator(request):
         buses.update({bus.busId: bus})
 
 
-async def main():
-    browser_host = simulator_host = "127.0.0.1"
-
-    browser_port = 8000  # sends data to the browser through 8000 port
-    simulator_port = 8080  # receives data from simulator through 8080 port
-
-    simulator_address = (simulator_host, simulator_port)
-    browser_address = (browser_host, browser_port)
+@click.command()
+@click.option(
+    "--host", "-h",
+    default="127.0.0.1",
+    show_default=True,
+    type=str,
+    help="Server address",
+)
+@click.option(
+    "--browser_port", "-bp",
+    default=8000,
+    type=int,
+    show_default=True,
+    help="Browser port. Send data to the browser through this port",
+)
+@click.option(
+    "--simulator_port", "-sp",
+    default=8080,
+    show_default=True,
+    type=int,
+    help="Simulator port. Receive data from simulator through this port",
+)
+@click.option(
+    "--verbose", '-v',
+    is_flag=True,
+    default=False,
+    help="Enable logging",
+    show_default=True
+)
+async def main(host, browser_port, simulator_port, verbose):
+    simulator_address = (host, simulator_port)
+    browser_address = (host, browser_port)
 
     async with trio.open_nursery() as nursery:
         nursery.start_soon(
@@ -140,4 +165,4 @@ async def main():
 
 
 with contextlib.suppress(KeyboardInterrupt):
-    trio.run(main)
+    main(_anyio_backend="trio")
