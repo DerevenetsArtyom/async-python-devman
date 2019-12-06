@@ -2,7 +2,6 @@ import json
 import random
 import contextlib
 
-
 import trio
 from trio_websocket import open_websocket_url, ConnectionClosed
 

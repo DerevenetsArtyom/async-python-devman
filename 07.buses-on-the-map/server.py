@@ -6,7 +6,7 @@ import asyncclick as click
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
 
-from schema import WindowBoundsSchema
+from schema import WindowBoundsSchema, BusSchema
 
 buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
@@ -80,15 +80,15 @@ async def talk_to_browser(ws, bounds):
         try:
             await send_buses(ws, bounds)
         except ConnectionClosed:
-            # TODO: logging
-            print("talk_to_browser: ConnectionClosed")
+            print("talk_to_browser: ConnectionClosed")  # TODO: logging
             break
 
         await trio.sleep(1)
 
 
 def validate_bus_message(message):
-    pass
+    schema = BusSchema()
+    return schema.validate(data=message)
 
 
 def validate_client_message(message):
@@ -160,15 +160,24 @@ async def handle_simulator(request):
         try:
             json_message = await ws.get_message()
         except ConnectionClosed:
-            # TODO: logging
-            print("handle_simulator: ConnectionClosed")
+            print("handle_simulator: ConnectionClosed")  # TODO: logging
             break
 
-        message = json.loads(json_message)
-        print("handle_simulator:", message)
+        message = validate_message(json_message, 'bus')
+        errors = message.get('errors')
 
-        bus = Bus(**message)
-        buses.update({bus.busId: bus})
+        print('!!! errors', errors)
+
+        print("handle_simulator:", message)
+        if errors:
+            error_message = json.dumps({
+                "msgType": "Errors",
+                "errors": errors
+            })
+            await ws.send_message(error_message)
+        else:
+            bus = Bus(**message['data'])  # TODO: message['data'] ???
+            buses.update({bus.busId: bus})
 
 
 @click.command()
