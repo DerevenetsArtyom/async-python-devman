@@ -14,3 +14,9 @@ class WindowBoundsDataSchema(Schema):
     west_lng = fields.Float(required=True)
     east_lng = fields.Float(required=True)
 
+
+class BusSchema(Schema):
+    busId = fields.String(required=True)
+    route = fields.String(required=True)
+    lat = fields.Float(required=True)
+    lng = fields.Float(required=True)
