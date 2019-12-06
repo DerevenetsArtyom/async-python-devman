@@ -6,6 +6,8 @@ import asyncclick as click
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
 
+from schema import WindowBoundsSchema
+
 buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
 
@@ -19,6 +21,7 @@ class Bus:
 
 @dataclass
 class WindowBounds:
+    errors: None = None
     south_lat: float = 0.0
     north_lat: float = 0.0
     west_lng: float = 0.0
@@ -30,11 +33,13 @@ class WindowBounds:
         return lat_inside and lng_inside
 
     def update(self, south_lat, north_lat, west_lng, east_lng):
-        print("update", south_lat, north_lat, west_lng, east_lng)
         self.south_lat = south_lat
         self.north_lat = north_lat
         self.west_lng = west_lng
         self.east_lng = east_lng
+
+    def register_errors(self, errors):
+        self.errors = errors
 
 
 async def send_buses(ws, bounds):
@@ -45,18 +50,24 @@ async def send_buses(ws, bounds):
     ]
     # TODO: logging (N buses inside bounds)
 
-    message_to_browser = {
-        "msgType": "Buses",
-        "buses": [
-            {
-                "busId": bus.busId,
-                "lat": bus.lat,
-                "lng": bus.lng,
-                "route": bus.busId,
-            }
-            for bus in buses_inside
-        ],
-    }
+    if bounds.errors:
+        message_to_browser = {
+            "msgType": "Errors",
+            "errors": bounds.errors
+        }
+    else:
+        message_to_browser = {
+            "msgType": "Buses",
+            "buses": [
+                {
+                    "busId": bus.busId,
+                    "lat": bus.lat,
+                    "lng": bus.lng,
+                    "route": bus.busId,
+                }
+                for bus in buses_inside
+            ],
+        }
 
     msg = json.dumps(message_to_browser)
     print("send_buses:", msg)
@@ -76,21 +87,59 @@ async def talk_to_browser(ws, bounds):
         await trio.sleep(1)
 
 
+def validate_bus_message(message):
+    pass
+
+
+def validate_client_message(message):
+    schema = WindowBoundsSchema()
+    return schema.validate(data=message)
+
+
+def validate_message(json_message, source):
+    result = {"data": json_message, 'errors': None}
+
+    try:
+        message = json.loads(json_message)
+    except json.JSONDecodeError:
+        result['errors'] = ['Requires valid JSON']
+        return result
+
+    result['data'] = message.get('data', message)
+
+    validating_functions = {
+        'bus': validate_bus_message,
+        'browser': validate_client_message,
+    }
+    validating_function = validating_functions.get(source)
+
+    if not validating_function:
+        result['errors'] = ['Data source is not correct']
+    else:
+        result['errors'] = validating_function(message)
+    return result
+
+
 async def listen_browser(ws, bounds):
     """Receive a message with window bounds from browser and update it"""
     while True:
         try:
             json_message = await ws.get_message()
         except ConnectionClosed:
-            # TODO: logging
-            print("listen_browser: ConnectionClosed")
+            print("listen_browser: ConnectionClosed")  # TODO: logging
             break
 
-        message = json.loads(json_message)
-        # TODO: logging
-        print("listen_browser:", message)
+        print("listen_browser:", json_message)  # TODO: logging
 
-        bounds.update(**message["data"])
+        message = validate_message(json_message, 'browser')
+        errors = message.get('errors')
+
+        print('!!! errors', errors)
+
+        if errors:
+            bounds.register_errors(errors)
+        else:
+            bounds.update(**message["data"])
 
 
 async def handle_browser(request):
