@@ -1,13 +1,31 @@
 import contextlib
 import json
 import itertools
+import logging
 import random
 import asyncclick as click
+import functools
 
 import trio
-from sys import stderr
-from trio_websocket import open_websocket_url, ConnectionClosed
-from utils import generate_bus_id, load_routes, relaunch_on_disconnect
+from trio_websocket import open_websocket_url, ConnectionClosed, HandshakeError
+from utils import generate_bus_id, load_routes
+
+
+def relaunch_on_disconnect(async_function):
+    # TODO: increase counter each next attempt (easy),
+    #  but reset to 3 after success (not implemented)
+
+    @functools.wraps(async_function)
+    async def inner(*args, **kwargs):
+        counter = 3
+        while True:
+            try:
+                await async_function(*args, **kwargs)
+
+            except (HandshakeError, ConnectionClosed):
+                logger.debug("Relaunch on disconnect")
+                await trio.sleep(counter)
+    return inner
 
 
 async def run_bus(bus_id, route, send_channel):
@@ -43,7 +61,6 @@ async def send_updates(server_address, receive_channel):
             await trio.sleep(1)
 
 
-# TODO: v — настройка логирования
 @click.command()
 @click.option(
     "--server",
@@ -87,6 +104,13 @@ async def send_updates(server_address, receive_channel):
     type=int,
     help="Delay of server coordinates refreshing",
 )
+@click.option(
+    "--verbose", '-v',
+    is_flag=True,
+    default=False,
+    help="Enable logging",
+    show_default=True
+)
 async def main(
     server,
     routes_number,
@@ -94,9 +118,13 @@ async def main(
     websockets_number,
     emulator_id,
     refresh_timeout,
+    verbose
 ):
-    send_channels = []
+    if not verbose:
+        app_logger = logging.getLogger('app_logger')
+        app_logger.disabled = True
 
+    send_channels = []
     try:
         async with trio.open_nursery() as nursery:
 
@@ -123,9 +151,12 @@ async def main(
                         break
 
     except OSError as ose:
-        # TODO: logging
-        print("Connection attempt failed: %s" % ose, file=stderr)
+        logger.debug("Connection attempt failed: %s", ose)
 
 
 with contextlib.suppress(KeyboardInterrupt):
+    logger = logging.getLogger('app_logger')
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
     main(_anyio_backend="trio")

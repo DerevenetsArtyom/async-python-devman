@@ -1,5 +1,6 @@
 import contextlib
 import json
+import logging
 from dataclasses import dataclass
 import asyncclick as click
 
@@ -48,7 +49,6 @@ async def send_buses(ws, bounds):
         for _, bus_info in buses.items()
         if bounds.is_inside(bus_info.lat, bus_info.lng)
     ]
-    # TODO: logging (N buses inside bounds)
 
     if bounds.errors:
         message_to_browser = {
@@ -69,8 +69,8 @@ async def send_buses(ws, bounds):
             ],
         }
 
+    logger.debug("send_buses: inside bounds %s buses", len(buses_inside))
     msg = json.dumps(message_to_browser)
-    print("send_buses:", msg)
     await ws.send_message(msg)
 
 
@@ -80,7 +80,7 @@ async def talk_to_browser(ws, bounds):
         try:
             await send_buses(ws, bounds)
         except ConnectionClosed:
-            print("talk_to_browser: ConnectionClosed")  # TODO: logging
+            logger.debug("*** talk_to_browser: ConnectionClosed ***")
             break
 
         await trio.sleep(1)
@@ -126,15 +126,13 @@ async def listen_browser(ws, bounds):
         try:
             json_message = await ws.get_message()
         except ConnectionClosed:
-            print("listen_browser: ConnectionClosed")  # TODO: logging
+            logger.debug("*** listen_browser: ConnectionClosed ***")
             break
 
-        print("listen_browser:", json_message)  # TODO: logging
+        logger.debug("listen_browser: %s", json_message)
 
         message = validate_message(json_message, 'browser')
         errors = message.get('errors')
-
-        print('!!! errors', errors)
 
         if errors:
             bounds.register_errors(errors)
@@ -160,15 +158,13 @@ async def handle_simulator(request):
         try:
             json_message = await ws.get_message()
         except ConnectionClosed:
-            print("handle_simulator: ConnectionClosed")  # TODO: logging
+            logger.debug("*** handle_simulator: ConnectionClosed ***")
             break
 
         message = validate_message(json_message, 'bus')
         errors = message.get('errors')
 
-        print('!!! errors', errors)
-
-        print("handle_simulator:", message)
+        logger.debug("handle_simulator: %s", message)
         if errors:
             error_message = json.dumps({
                 "msgType": "Errors",
@@ -176,7 +172,7 @@ async def handle_simulator(request):
             })
             await ws.send_message(error_message)
         else:
-            bus = Bus(**message['data'])  # TODO: message['data'] ???
+            bus = Bus(**message['data'])
             buses.update({bus.busId: bus})
 
 
@@ -213,6 +209,10 @@ async def main(host, browser_port, simulator_port, verbose):
     simulator_address = (host, simulator_port)
     browser_address = (host, browser_port)
 
+    if not verbose:
+        app_logger = logging.getLogger('app_logger')
+        app_logger.disabled = True
+
     async with trio.open_nursery() as nursery:
         nursery.start_soon(
             serve_websocket, handle_simulator, *simulator_address, None
@@ -223,4 +223,8 @@ async def main(host, browser_port, simulator_port, verbose):
 
 
 with contextlib.suppress(KeyboardInterrupt):
+    logger = logging.getLogger('app_logger')
+    handler = logging.StreamHandler()
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
     main(_anyio_backend="trio")
