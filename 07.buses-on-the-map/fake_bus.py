@@ -30,10 +30,13 @@ def relaunch_on_disconnect(async_function):
 
 
 async def run_bus(bus_id, route, send_channel):
-    # Template for sending to the channel with updated values each time
+    # Template message to send to the channel with updated values each time
     message = {"busId": None, "lat": None, "lng": None, "route": None}
 
     coordinates = route["coordinates"]
+
+    # set starting point for different bus
+    # with different coordinates om the same route
     start_offset = random.randrange(len(coordinates))
 
     # infinite loop to circle the route (start again after finish)
@@ -50,7 +53,7 @@ async def run_bus(bus_id, route, send_channel):
 
             await send_channel.send(message)
 
-        # Reset offset after first iteration to start from the beginning
+        # Reset offset after first iteration to start route from the beginning
         start_offset = 0
 
 
@@ -76,7 +79,7 @@ async def send_updates(server_address, receive_channel, refresh_timeout):
     default=5,
     show_default=True,
     type=int,
-    help="Amount of routes",
+    help="Amount of routes. There are 963 routes available",
 )
 @click.option(
     "--buses_per_route",
@@ -132,7 +135,7 @@ async def main(
         async with trio.open_nursery() as nursery:
 
             # Prepare memory channels: separate task for every 'receive_channel'
-            # and collect 'send_channel's to be randomly selected afterwards
+            # and accumulate 'send_channel's to be randomly selected afterwards
             for _ in range(websockets_number):
                 send_channel, receive_channel = trio.open_memory_channel(0)
                 send_channels.append(send_channel)
