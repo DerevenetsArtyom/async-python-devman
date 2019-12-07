@@ -6,8 +6,8 @@ import asyncclick as click
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
 
-from schema import WindowBoundsSchema, BusSchema
 from models import WindowBounds, Bus
+from utils import validate_bus_message, validate_client_message, validate_message
 
 buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
@@ -53,40 +53,6 @@ async def talk_to_browser(ws, bounds):
             break
 
         await trio.sleep(1)
-
-
-def validate_bus_message(message):
-    schema = BusSchema()
-    return schema.validate(data=message)
-
-
-def validate_client_message(message):
-    schema = WindowBoundsSchema()
-    return schema.validate(data=message)
-
-
-def validate_message(json_message, source):
-    result = {"data": json_message, 'errors': None}
-
-    try:
-        message = json.loads(json_message)
-    except json.JSONDecodeError:
-        result['errors'] = ['Requires valid JSON']
-        return result
-
-    result['data'] = message.get('data', message)
-
-    validating_functions = {
-        'bus': validate_bus_message,
-        'browser': validate_client_message,
-    }
-    validating_function = validating_functions.get(source)
-
-    if not validating_function:
-        result['errors'] = ['Data source is not correct']
-    else:
-        result['errors'] = validating_function(message)
-    return result
 
 
 async def listen_browser(ws, bounds):
