@@ -54,11 +54,12 @@ async def run_bus(bus_id, route, send_channel):
 
 
 @relaunch_on_disconnect
-async def send_updates(server_address, receive_channel):
+async def send_updates(server_address, receive_channel, refresh_timeout):
     async with open_websocket_url(server_address) as ws:
         async for value in receive_channel:
             await ws.send_message(json.dumps(value, ensure_ascii=True))
-            await trio.sleep(1)
+            # without that delay buses go crazy on the map
+            await trio.sleep(refresh_timeout)
 
 
 @click.command()
@@ -99,9 +100,9 @@ async def send_updates(server_address, receive_channel):
 )
 @click.option(
     "--refresh_timeout",
-    default=0,
+    default=0.1,
     show_default=True,
-    type=int,
+    type=float,
     help="Delay of server coordinates refreshing",
 )
 @click.option(
@@ -134,7 +135,9 @@ async def main(
                 send_channel, receive_channel = trio.open_memory_channel(0)
                 send_channels.append(send_channel)
 
-                nursery.start_soon(send_updates, server, receive_channel)
+                nursery.start_soon(
+                    send_updates, server, receive_channel, refresh_timeout
+                )
 
             for bus_number in range(1, buses_per_route + 1):
                 for route in itertools.islice(load_routes(), routes_number):
