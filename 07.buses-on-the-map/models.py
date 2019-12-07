@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 
 
 @dataclass
@@ -30,3 +31,8 @@ class WindowBounds:
 
     def register_errors(self, errors):
         self.errors = errors
+
+
+class MessageSource(Enum):
+    bus = 'bus'
+    browser = 'browser'

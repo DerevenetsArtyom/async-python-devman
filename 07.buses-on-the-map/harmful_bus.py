@@ -23,8 +23,9 @@ async def main():
                 error_message = random.choice(ERROR_MESSAGES)
                 await ws.send_message(error_message)
                 print(f'Sent message "{error_message}" to {url}')
+
                 message = await ws.get_message()
-                print(f'Received message: {message}')
+                print(f'Received message: {message} \n')
             except (OSError, ConnectionClosed) as e:
                 print(f'Connection failed: {e}')
                 break

@@ -2,7 +2,6 @@ import json
 import random
 import contextlib
 
-
 import trio
 from trio_websocket import open_websocket_url, ConnectionClosed
 
@@ -24,7 +23,7 @@ async def main():
                 print(f'Sent message "{error_message}" to {url}')
 
                 message = await ws.get_message()
-                print(f'Received message: {message}')
+                print(f'Received message: {message}\n')
             except (OSError, ConnectionClosed) as e:
                 print(f'Connection failed: {e}')
                 break

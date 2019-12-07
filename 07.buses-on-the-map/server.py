@@ -6,7 +6,7 @@ import asyncclick as click
 import trio
 from trio_websocket import serve_websocket, ConnectionClosed
 
-from models import WindowBounds, Bus
+from models import WindowBounds, Bus, MessageSource
 from utils import validate_bus_message, validate_client_message, validate_message
 
 buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
@@ -66,7 +66,7 @@ async def listen_browser(ws, bounds):
 
         logger.debug("listen_browser: %s", json_message)
 
-        message = validate_message(json_message, 'browser')
+        message = validate_message(json_message, MessageSource.browser)
         errors = message.get('errors')
 
         if errors:
@@ -96,7 +96,7 @@ async def handle_simulator(request):
             logger.debug("*** handle_simulator: ConnectionClosed ***")
             break
 
-        message = validate_message(json_message, 'bus')
+        message = validate_message(json_message, MessageSource.bus)
         errors = message.get('errors')
 
         logger.debug("handle_simulator: %s", message)
