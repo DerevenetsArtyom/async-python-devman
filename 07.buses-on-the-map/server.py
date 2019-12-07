@@ -221,10 +221,10 @@ async def main(host, browser_port, simulator_port, verbose):
             serve_websocket, handle_browser, *browser_address, None
         )
 
-
-with contextlib.suppress(KeyboardInterrupt):
-    logger = logging.getLogger('app_logger')
-    handler = logging.StreamHandler()
-    logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
-    main(_anyio_backend="trio")
+if __name__ == "__main__":
+    with contextlib.suppress(KeyboardInterrupt):
+        logger = logging.getLogger('app_logger')
+        handler = logging.StreamHandler()
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+        main(_anyio_backend="trio")

@@ -30,7 +30,7 @@ async def main():
                 break
             await trio.sleep(1)
 
-
-with contextlib.suppress(KeyboardInterrupt):
-    trio.run(main)
+if __name__ == "__main__":
+    with contextlib.suppress(KeyboardInterrupt):
+        trio.run(main)
 
