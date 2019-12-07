@@ -3,7 +3,7 @@ from marshmallow import Schema, fields, validate
 
 class WindowBoundsSchema(Schema):
     msgType = fields.String(
-        required=True, validate=validate.OneOf(["newBounds", ])
+        required=True, validate=validate.OneOf(["newBounds"])
     )
     data = fields.Nested("WindowBoundsDataSchema", required=True)
 

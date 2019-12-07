@@ -29,24 +29,24 @@ def validate_client_message(message):
 
 
 def validate_message(json_message, source):
-    result = {"data": json_message, 'errors': None}
+    result = {"data": json_message, "errors": None}
 
     try:
         message = json.loads(json_message)
     except json.JSONDecodeError:
-        result['errors'] = ['Requires valid JSON']
+        result["errors"] = ["Requires valid JSON"]
         return result
 
-    result['data'] = message.get('data', message)
+    result["data"] = message.get("data", message)
 
     validating_functions = {
-        'bus': validate_bus_message,
-        'browser': validate_client_message,
+        "bus": validate_bus_message,
+        "browser": validate_client_message,
     }
     validating_function = validating_functions.get(source)
 
     if not validating_function:
-        result['errors'] = ['Data source is not correct']
+        result["errors"] = ["Data source is not correct"]
     else:
-        result['errors'] = validating_function(message)
+        result["errors"] = validating_function(message)
     return result

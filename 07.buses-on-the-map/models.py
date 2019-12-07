@@ -34,5 +34,5 @@ class WindowBounds:
 
 
 class MessageSource(Enum):
-    bus = 'bus'
-    browser = 'browser'
+    bus = "bus"
+    browser = "browser"

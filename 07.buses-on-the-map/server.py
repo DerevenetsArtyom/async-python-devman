@@ -7,7 +7,11 @@ import trio
 from trio_websocket import serve_websocket, ConnectionClosed
 
 from models import WindowBounds, Bus, MessageSource
-from utils import validate_bus_message, validate_client_message, validate_message
+from utils import (
+    validate_bus_message,
+    validate_client_message,
+    validate_message,
+)
 
 buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
@@ -20,10 +24,7 @@ async def send_buses(ws, bounds):
     ]
 
     if bounds.errors:
-        message_to_browser = {
-            "msgType": "Errors",
-            "errors": bounds.errors
-        }
+        message_to_browser = {"msgType": "Errors", "errors": bounds.errors}
     else:
         message_to_browser = {
             "msgType": "Buses",
@@ -67,7 +68,7 @@ async def listen_browser(ws, bounds):
         logger.debug("listen_browser: %s", json_message)
 
         message = validate_message(json_message, MessageSource.browser)
-        errors = message.get('errors')
+        errors = message.get("errors")
 
         if errors:
             bounds.register_errors(errors)
@@ -97,55 +98,56 @@ async def handle_simulator(request):
             break
 
         message = validate_message(json_message, MessageSource.bus)
-        errors = message.get('errors')
+        errors = message.get("errors")
 
         logger.debug("handle_simulator: %s", message)
         if errors:
-            error_message = json.dumps({
-                "msgType": "Errors",
-                "errors": errors
-            })
+            error_message = json.dumps({"msgType": "Errors", "errors": errors})
             await ws.send_message(error_message)
         else:
-            bus = Bus(**message['data'])
+            bus = Bus(**message["data"])
             buses.update({bus.busId: bus})
 
 
 @click.command()
 @click.option(
-    "--host", "-h",
+    "--host",
+    "-h",
     default="127.0.0.1",
     show_default=True,
     type=str,
     help="Server address",
 )
 @click.option(
-    "--browser_port", "-bp",
+    "--browser_port",
+    "-bp",
     default=8000,
     type=int,
     show_default=True,
     help="Browser port. Send data to the browser through this port",
 )
 @click.option(
-    "--simulator_port", "-sp",
+    "--simulator_port",
+    "-sp",
     default=8080,
     show_default=True,
     type=int,
     help="Simulator port. Receive data from simulator through this port",
 )
 @click.option(
-    "--verbose", '-v',
+    "--verbose",
+    "-v",
     is_flag=True,
     default=False,
     help="Enable logging",
-    show_default=True
+    show_default=True,
 )
 async def main(host, browser_port, simulator_port, verbose):
     simulator_address = (host, simulator_port)
     browser_address = (host, browser_port)
 
     if not verbose:
-        app_logger = logging.getLogger('app_logger')
+        app_logger = logging.getLogger("app_logger")
         app_logger.disabled = True
 
     async with trio.open_nursery() as nursery:
@@ -156,9 +158,10 @@ async def main(host, browser_port, simulator_port, verbose):
             serve_websocket, handle_browser, *browser_address, None
         )
 
+
 if __name__ == "__main__":
     with contextlib.suppress(KeyboardInterrupt):
-        logger = logging.getLogger('app_logger')
+        logger = logging.getLogger("app_logger")
         handler = logging.StreamHandler()
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)

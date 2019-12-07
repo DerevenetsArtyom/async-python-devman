@@ -25,6 +25,7 @@ def relaunch_on_disconnect(async_function):
             except (HandshakeError, ConnectionClosed):
                 logger.debug("Relaunch on disconnect")
                 await trio.sleep(counter)
+
     return inner
 
 
@@ -106,11 +107,12 @@ async def send_updates(server_address, receive_channel, refresh_timeout):
     help="Delay of server coordinates refreshing",
 )
 @click.option(
-    "--verbose", '-v',
+    "--verbose",
+    "-v",
     is_flag=True,
     default=False,
     help="Enable logging",
-    show_default=True
+    show_default=True,
 )
 async def main(
     server,
@@ -119,10 +121,10 @@ async def main(
     websockets_number,
     emulator_id,
     refresh_timeout,
-    verbose
+    verbose,
 ):
     if not verbose:
-        app_logger = logging.getLogger('app_logger')
+        app_logger = logging.getLogger("app_logger")
         app_logger.disabled = True
 
     send_channels = []
@@ -156,9 +158,10 @@ async def main(
     except OSError as ose:
         logger.debug("Connection attempt failed: %s", ose)
 
+
 if __name__ == "__main__":
     with contextlib.suppress(KeyboardInterrupt):
-        logger = logging.getLogger('app_logger')
+        logger = logging.getLogger("app_logger")
         handler = logging.StreamHandler()
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
