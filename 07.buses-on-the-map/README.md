@@ -1,16 +1,71 @@
-# Buses on the map of Moscow
+# Buses on the map
 
-Web application shows the movement of buses on the map of Moscow.
+Web application shows the movement of buses on the map of Moscow.  
 
-<img src="screenshots/buses.gif">
+Project uses web sockets ([trio-websocket](https://github.com/HyperionGray/trio-websocket)) 
+based on [Trio](https://github.com/python-trio/trio) async implementation.  
+![](screenshots/buses.gif)
+
+## How to install
+
+Python version required: 3.8
+* It's recommended to use `venv` or `virtualenv` for better isolation. `venv` setup example:
+```
+python3 -m venv env
+source env/bin/activate
+```
+
+* Install requirements:  
+```
+pip3 install -r requirements.txt` 
+```
+(alternatively try add `sudo` before command)
 
 ## How to launch
 
-- Download the code
-- Open the index.html file in your browser
+* Run `python3.8 server.py`.  
+This server (with default settings) listens incoming messages on `127.0.0.1:8080` address   
+and sends messages to `127.0.0.1:8000` address.  
+CLI args for `server.py`:
+```
+Options:
+  -h, --host TEXT                Server address  [default: 127.0.0.1]
+  -bp, --browser_port INTEGER    Send data to the browser through this port
+                                 [default: 8000]
+  -sp, --simulator_port INTEGER  Receive data from simulator through this port
+                                 [default: 8080]
+  -v, --verbose                  Enable logging  [default: False]
+  --help                         Show this message and exit.
+```
 
 
-# Settings
+* For simulate the movement of buses you have to run the script `fake_bus.py` in another terminal.  
+CLI args for `fake_bus.py`:
+```
+Options:
+  --server TEXT                Server address  [default: ws://127.0.0.1:8080]
+  --routes_number INTEGER      Amount of routes. There are 963 routes
+                               available  [default: 5]
+  --buses_per_route INTEGER    Amount of buses per route  [default: 5]
+  --websockets_number INTEGER  Amount of opened websockets  [default: 5]
+  --emulator_id TEXT           Prefix to 'busId' in case of several instances
+                               fake_bus.py  [default: ]
+  --refresh_timeout FLOAT      Delay of server coordinates refreshing
+                               [default: 0.1]
+  -v, --verbose                Enable logging  [default: False]
+  --help                       Show this message and exit.
+
+```
+
+* Open `index.html` in your browser.
+
+
+
+And you can use `harmful_bus.py` and `harmful_client.py` for test incorrect 
+incoming values from bus / browser respectively with running `server.py`.  
+
+
+## Settings
 
 At the bottom right of the page, you can enable logging debug mode and specify a non-standard web socket address.
 
@@ -50,14 +105,7 @@ The frontend tracks the movement of the user on the map and sends to the server 
 }
 ```
 
-
-
 ## Used libraries
 
 - [Leaflet](https://leafletjs.com/) - Drawing a map
 - [loglevel](https://www.npmjs.com/package/loglevel) for logging
-
-
-# The goals of the project
-
-The code is written for training purposes and is a lesson in a course on Python and web development at [Devman](https://dvmn.org).

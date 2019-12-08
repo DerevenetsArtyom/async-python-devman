@@ -124,7 +124,7 @@ async def handle_simulator(request):
     default=8000,
     type=int,
     show_default=True,
-    help="Browser port. Send data to the browser through this port",
+    help="Send data to the browser through this port",
 )
 @click.option(
     "--simulator_port",
@@ -132,7 +132,7 @@ async def handle_simulator(request):
     default=8080,
     show_default=True,
     type=int,
-    help="Simulator port. Receive data from simulator through this port",
+    help="Receive data from simulator through this port",
 )
 @click.option(
     "--verbose",
