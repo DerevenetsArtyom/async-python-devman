@@ -43,7 +43,7 @@ def validate_message(json_message, source):
         "bus": validate_bus_message,
         "browser": validate_client_message,
     }
-    validating_function = validating_functions.get(source)
+    validating_function = validating_functions.get(source.value)
 
     if not validating_function:
         result["errors"] = ["Data source is not correct"]
