@@ -156,10 +156,7 @@ async def main(
                     # Pick random 'send' channel for every bus
                     send_channel = random.choice(send_channels)
 
-                    try:
-                        nursery.start_soon(run_bus, bus_id, route, send_channel)
-                    except ConnectionClosed:
-                        break
+                    nursery.start_soon(run_bus, bus_id, route, send_channel)
 
     except OSError as ose:
         logger.debug("Connection attempt failed: %s", ose)
