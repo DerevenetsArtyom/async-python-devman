@@ -13,6 +13,10 @@ from utils import (
     validate_message,
 )
 
+logger = logging.getLogger("app_logger")
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
+
 buses = {}  # global variable to collect buses info -  {bus_id: bus_info}
 
 
@@ -147,8 +151,7 @@ async def main(host, browser_port, simulator_port, verbose):
     browser_address = (host, browser_port)
 
     if not verbose:
-        app_logger = logging.getLogger("app_logger")
-        app_logger.disabled = True
+        logger.disabled = True
 
     async with trio.open_nursery() as nursery:
         nursery.start_soon(
@@ -161,8 +164,4 @@ async def main(host, browser_port, simulator_port, verbose):
 
 if __name__ == "__main__":
     with contextlib.suppress(KeyboardInterrupt):
-        logger = logging.getLogger("app_logger")
-        handler = logging.StreamHandler()
-        logger.addHandler(handler)
-        logger.setLevel(logging.DEBUG)
         main(_anyio_backend="trio")
