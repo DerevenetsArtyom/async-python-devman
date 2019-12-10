@@ -16,6 +16,8 @@ ERROR_MESSAGES = [
     json.dumps(
         {"busId": "c790сс", "lat": [55.7500], "lng": [37.600], "route": "120"}
     ),
+    "this is not JSON, just a string",
+    '{ { "busId": [ { "id": "1", } ] } }',
 ]
 
 

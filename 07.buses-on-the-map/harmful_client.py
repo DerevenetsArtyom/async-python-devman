@@ -19,6 +19,8 @@ ERROR_MESSAGES = [
     ),
     json.dumps({"msgType": "Error Msg Type"}),
     json.dumps({"msgType": "newBounds", "data": {"lat": 20, "north_lat": 30}}),
+    "this is not JSON, just a string",
+    '{ { "busId": [ { "id": "1", } ] } }',
 ]
 
 
