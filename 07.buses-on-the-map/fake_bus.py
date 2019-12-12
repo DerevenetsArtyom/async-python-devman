@@ -11,8 +11,6 @@ from trio_websocket import open_websocket_url, ConnectionClosed, HandshakeError
 from utils import generate_bus_id, load_routes
 
 logger = logging.getLogger("app_logger")
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)
 
 
 def relaunch_on_disconnect(async_function):
@@ -164,4 +162,7 @@ async def main(
 
 if __name__ == "__main__":
     with contextlib.suppress(KeyboardInterrupt):
+        logger.addHandler(logging.StreamHandler())
+        logger.setLevel(logging.DEBUG)
+
         main(_anyio_backend="trio")
