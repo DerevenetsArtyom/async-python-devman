@@ -47,7 +47,7 @@ async def send_buses(ws, bounds):
 
 
 async def talk_to_browser(ws, bounds):
-    """Send buses data to browser every second according to current bounds"""
+    """Periodically send buses data to browser according to current bounds"""
     while True:
         try:
             await send_buses(ws, bounds)
@@ -55,7 +55,7 @@ async def talk_to_browser(ws, bounds):
             logger.debug("*** talk_to_browser: ConnectionClosed ***")
             break
 
-        await trio.sleep(1)
+        await trio.sleep(0.1)
 
 
 async def listen_browser(ws, bounds):
