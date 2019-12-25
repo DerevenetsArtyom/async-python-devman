@@ -8,8 +8,9 @@ based on [Trio](https://github.com/python-trio/trio) async implementation.
 
 ## How to install
 
-Python version required: 3.8
-* It's recommended to use `venv` or `virtualenv` for better isolation. `venv` setup example:
+Python version required: `3.8`
+* It's recommended to use `venv` or `virtualenv` for better isolation.  
+`venv` setup example:
 ```
 python3 -m venv env
 source env/bin/activate
@@ -17,7 +18,7 @@ source env/bin/activate
 
 * Install requirements:  
 ```
-pip3 install -r requirements.txt` 
+pip3 install -r requirements.txt
 ```
 (alternatively try add `sudo` before command)
 
@@ -39,7 +40,7 @@ Options:
 ```
 
 
-* For simulate the movement of buses you have to run the script `fake_bus.py` in another terminal.  
+* For simulation the movement of buses you have to run the script `fake_bus.py` in another terminal.  
 CLI args for `fake_bus.py`:
 ```
 Options:
