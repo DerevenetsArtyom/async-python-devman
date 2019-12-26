@@ -87,7 +87,7 @@
     * Acceleration the analysis to the maximum
     * JSON-API for browser plugin
 
-* ## [7. Watching the buses](07.buses-on-the-map/README.md)
+* ## [7. Watching the buses](07.buses_on_the_map/README.md)
     There is a socially and environmentally responsible citizen. He wants to make people use cars less.  
     If we switch to public transport, the traffic jams will be less and the air will be cleaner.  
 
