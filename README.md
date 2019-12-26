@@ -69,7 +69,7 @@
     * automatic reconnection in case of disconnection
     * writing chat messages to a text file
 
-* ## [6. Filtering the Internet at the speed of light](06.news-filtering/README.md)
+* ## [6. Filtering the Internet at the speed of light](06.news_filtering/README.md)
     Are you tired of the fake news on the Internet? Now there is a chance to get even with them. 
     There will be a crawler, which will be held on the sites and will make its own rating of jaundice. 
     The more expressive words, brightly negative or enthusiastically positive phrases in the text, 
