@@ -1,5 +1,8 @@
 import asks
 import trio
+import os
+
+from dotenv import load_dotenv
 
 
 async def request_smsc(method, login, password, payload):
@@ -22,3 +25,16 @@ async def request_smsc(method, login, password, payload):
         {'status': 1, 'last_date': '28.12.2019 19:20:22', 'last_timestamp': 1577550022}
     """
     pass
+
+
+async def main():
+    load_dotenv()
+
+    login = os.getenv("LOGIN")
+    password = os.getenv("PASSWORD")
+
+    await request_smsc('method', login, password, {})
+
+
+if __name__ == "__main__":
+    trio.run(main)
