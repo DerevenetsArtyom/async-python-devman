@@ -38,7 +38,6 @@ async def request_smsc(method, login, password, payload):
         raise SmscApiError("Payload should contain 'phone' or 'phones' keys")
 
     common_url = f"https://smsc.ru/sys/{method}.php?login={login}&psw={password}"
-    result = None
 
     if method == "send":
         payload_str = "".join([f"{key}={value}" for key, value in payload.items()])
@@ -55,16 +54,25 @@ async def request_smsc(method, login, password, payload):
         result = response.json()
 
     elif method == "status":
-        pass
+        phone_str = f"phone={payload['phone']}"
+        id_str = f"id={payload['id']}"
+        formatting = 3
+
+        url = f"{common_url}&{phone_str}&{id_str}&fmt={formatting}"
+        response = await asks.get(url)
+        # {'status': 1, 'last_date': '11.03.2020 20:35:30', 'last_timestamp': 1583948130}
+
+        result = response.json()
     else:
         raise SmscApiError("Unsupported method")
 
-    print('result', result)
-
     if "error" in result:
-        #  {'error': 'invalid number', 'error_code': 7, 'id': 64}
-        #  {"error": "duplicate request, wait a minute", "error_code": 9}
+        # {'error': 'invalid number', 'error_code': 7, 'id': 64}
+        # {"error": "duplicate request, wait a minute", "error_code": 9}
+        # {'error': 'parameters error', 'error_code': 1}
         raise SmscApiError(f"An error occurred during request: '{result['error']}' with code {result['error_code']}")
+
+    return result
 
 
 async def main():
@@ -75,6 +83,7 @@ async def main():
     phone = os.getenv("PHONE")
 
     await request_smsc('send', login, password, {"phones": phone})
+    await request_smsc('status', login, password, {"phone": phone, "id": 67})
 
 
 if __name__ == "__main__":
