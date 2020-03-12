@@ -1,13 +1,20 @@
-from quart import websocket
+from quart import websocket, render_template
 
 from quart_trio import QuartTrio
 
-app = QuartTrio(__name__)
+app = QuartTrio(__name__, template_folder='frontend')
 
 
 @app.route('/')
 async def hello():
-    return 'hello there'
+    context = {
+        "date": "01.02.2000",
+        "mailingId": "33",
+        "SMSText": "SMSText",
+        "percentFulfilled": "33",
+        "percentFailed": "11",
+    }
+    return await render_template('index.html', mailing=context)
 
 
 @app.websocket('/ws')
