@@ -1,6 +1,10 @@
 from quart import websocket, render_template, request
+from dotenv import load_dotenv
+import os
 
 from quart_trio import QuartTrio
+
+from main import request_smsc
 
 app = QuartTrio(__name__, template_folder='frontend')
 
@@ -19,11 +23,16 @@ async def hello():
 
 @app.route('/send/', methods=['POST'])
 async def send():
-    # data = await request.get_data()  # Full raw body
-    # print('data', data)
+    load_dotenv()
+
+    login = os.getenv("LOGIN")
+    password = os.getenv("PASSWORD")
+    phone = os.getenv("PHONE")
+
     form = await request.form
-    text = form["text"]
-    print('text', text)
+    message = form["text"]
+    res = await request_smsc('send', login, password, {"phones": phone}, message)
+    print('res', res)
     return {}
 
 
