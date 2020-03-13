@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from exceptions import SmscApiError
 
 
-async def request_smsc(method, login, password, payload):
+async def request_smsc(method, login, password, payload, message=None):
     """Send request to SMSC.ru service.
 
     Args:
@@ -15,6 +15,7 @@ async def request_smsc(method, login, password, payload):
         login (str): Login for account on SMSC.
         password (str): Password for account on SMSC.
         payload (dict): Additional request params, override default ones.
+        message (str): Message to send.
     Returns:
         dict: Response from SMSC API.
     Raises:
@@ -38,10 +39,11 @@ async def request_smsc(method, login, password, payload):
         raise SmscApiError("Payload should contain 'phone' or 'phones' keys")
 
     common_url = f"https://smsc.ru/sys/{method}.php?login={login}&psw={password}"
+    if message is None:
+        message = "Внимание,%20вечером%20будет%20шторм!"
 
     if method == "send":
         payload_str = "".join([f"{key}={value}" for key, value in payload.items()])
-        message = "Внимание,%20вечером%20будет%20шторм!"
         formatting = 3
         cost = 3
         charset = "utf-8"
