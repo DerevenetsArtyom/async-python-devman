@@ -2,6 +2,8 @@ import asyncio
 import aioredis
 import argparse
 
+import trio_asyncio
+
 from db import Database
 
 
@@ -14,6 +16,10 @@ def create_argparser():
 
 
 async def main():
+    # trio_asyncio has difficulties with aioredis, workaround here:
+    # https://github.com/python-trio/trio-asyncio/issues/63 (answer from @parity3)
+    asyncio._set_running_loop(asyncio.get_event_loop())
+
     parser = create_argparser()
     args = parser.parse_args()
 
@@ -89,4 +95,6 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    trio_asyncio.run(
+        trio_asyncio.aio_as_trio(main)
+    )
