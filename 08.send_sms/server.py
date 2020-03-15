@@ -53,16 +53,29 @@ async def hello():
 
 @app.route('/send/', methods=['POST'])
 async def send():
-    load_dotenv()
+    # load_dotenv()
+    # login = os.getenv("LOGIN")
+    # password = os.getenv("PASSWORD")
+    # phone = os.getenv("PHONE")
+    # res = await request_smsc('send', login, password, {"phones": phone}, message)
+    import random
 
-    login = os.getenv("LOGIN")
-    password = os.getenv("PASSWORD")
-    phone = os.getenv("PHONE")
-
+    sms_id = str(random.randint(1, 10))
+    phones = ["+79305551234", "911", "112"]
     form = await request.form
     message = form["text"]
-    res = await request_smsc('send', login, password, {"phones": phone}, message)
-    print('res', res)
+
+    await trio_asyncio.run_asyncio(app.db_pool.add_sms_mailing, sms_id, phones, message)
+
+    sms_ids = await trio_asyncio.run_asyncio(app.db_pool.list_sms_mailings)
+    print('There are sms with such IDs in the DB', sms_ids)
+
+    print('sms_mailings:')
+    for id in sms_ids:
+        sms_mailings = await trio_asyncio.run_asyncio(app.db_pool.get_sms_mailings, id)
+        print('\t', sms_mailings)
+    print()
+
     return {}
 
 
