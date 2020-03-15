@@ -1,4 +1,7 @@
+import asyncio
 import functools
+import warnings
+from contextlib import suppress
 
 import aioredis
 from hypercorn.trio import serve
@@ -86,4 +89,19 @@ async def ws():
             await trio.sleep(1)
 
 
-app.run('0.0.0.0', port=5000)
+async def run_server():
+    async with trio_asyncio.open_loop():
+        # trio_asyncio has difficulties with aioredis, workaround here:
+        # https://github.com/python-trio/trio-asyncio/issues/63 (answer from @parity3)
+        asyncio._set_running_loop(asyncio.get_event_loop())
+
+        config = HyperConfig()
+        config.bind = [f"0.0.0.0:5000"]
+        config.use_reloader = True
+        await serve(app, config)
+
+
+if __name__ == '__main__':
+    warnings.filterwarnings("ignore", category=trio.TrioDeprecationWarning)
+    with suppress(KeyboardInterrupt):
+        trio.run(run_server)
