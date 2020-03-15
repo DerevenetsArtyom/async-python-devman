@@ -42,12 +42,14 @@ async def request_smsc(method, login, password, payload, message=None):
     if message is None:
         message = "Внимание,%20вечером%20будет%20шторм!"
 
+    # TODO: move code inside conditions to separate functions
     if method == "send":
         payload_str = "".join([f"{key}={value}" for key, value in payload.items()])
         formatting = 3
         cost = 3
         charset = "utf-8"
 
+        # TODO: use 'params' dict instead of manually formatted string
         url = f"{common_url}&{payload_str}&mes={message}&charset={charset}&fmt={formatting}&cost={cost}"
         response = await asks.get(url)
         # {"id": 63, "cnt": 1, "cost": "3.8", "balance": "286.55"}

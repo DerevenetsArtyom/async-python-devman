@@ -1,3 +1,8 @@
+import functools
+
+import aioredis
+from hypercorn.trio import serve
+from hypercorn.config import Config as HyperConfig
 import trio
 from quart import websocket, render_template, request
 from dotenv import load_dotenv
@@ -5,10 +10,30 @@ import json
 import os
 
 from quart_trio import QuartTrio
+import trio_asyncio
 
 from main import request_smsc
+from db.db import Database
 
 app = QuartTrio(__name__, template_folder='frontend')
+
+
+@app.before_serving
+async def create_db_pool():
+    """Create and bind db_pool before start serving requests"""
+    create_redis_pool = functools.partial(aioredis.create_redis_pool, encoding='utf-8')
+
+    redis_uri = "redis://127.0.0.1:6379"
+
+    redis = await trio_asyncio.run_asyncio(create_redis_pool, redis_uri)
+    app.db_pool = Database(redis)
+
+
+@app.after_serving
+async def close_db_pool():
+    if app.db_pool:
+        app.db_pool.redis.close()
+        await trio_asyncio.run_asyncio(app.db_pool.redis.wait_closed)
 
 
 @app.route('/')
