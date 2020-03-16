@@ -1,3 +1,4 @@
+import random
 import asyncio
 import functools
 import warnings
@@ -9,14 +10,11 @@ from hypercorn.trio import serve
 from hypercorn.config import Config as HyperConfig
 import trio
 from quart import websocket, request
-from dotenv import load_dotenv
 import json
-import os
 
 from quart_trio import QuartTrio
 import trio_asyncio
 
-from main import request_smsc
 from db.db import Database
 
 app = QuartTrio(__name__)
@@ -59,23 +57,18 @@ async def index():
 
 
 @app.route('/send/', methods=['POST'])
-async def send():
-    # load_dotenv()
-    # login = os.getenv("LOGIN")
-    # password = os.getenv("PASSWORD")
-    # phone = os.getenv("PHONE")
-    # res = await request_smsc('send', login, password, {"phones": phone}, message)
-    import random
+async def send_sms():
+    # Neither 'request_smsc' nor mocked stuff is used here,
+    # just static data with some random for sake of simplicity
 
     sms_id = str(random.randint(1, 10))
-    phones = ["911", "112"]
     form = await request.form
     message = form["text"]
 
-    await trio_asyncio.run_asyncio(app.db_pool.add_sms_mailing, sms_id, phones, message)
+    await trio_asyncio.run_asyncio(app.db_pool.add_sms_mailing, sms_id, ["911", "112"], message)
 
     sms_ids = await trio_asyncio.run_asyncio(app.db_pool.list_sms_mailings)
-    print('There are sms with such IDs in the DB', sms_ids)
+    print('There are messages with such IDs in the DB:', sms_ids)
 
     print('sms_mailings:')
     for id in sms_ids:
