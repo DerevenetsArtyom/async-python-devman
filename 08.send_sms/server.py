@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import warnings
+from collections import Counter
 from contextlib import suppress
 
 import aioredis
@@ -19,6 +20,19 @@ from main import request_smsc
 from db.db import Database
 
 app = QuartTrio(__name__)
+
+
+async def convert_sms_data(sms_data):
+    """Convert sms related data from Redis format to format supported by frontend"""
+    phones_counter = Counter(sms_data["phones"].values())
+    return {
+        "timestamp": sms_data.get("created_at"),
+        "SMSText": sms_data.get("text"),
+        "mailingId": str(sms_data.get("sms_id")),
+        "totalSMSAmount": sms_data.get("phones_count"),
+        "deliveredSMSAmount": phones_counter.get("delivered", 0),
+        "failedSMSAmount": phones_counter.get("failed", 0),
+    }
 
 
 @app.before_serving
@@ -74,25 +88,21 @@ async def send():
 
 @app.websocket('/ws')
 async def ws():
-    message = {
-        "msgType": "SMSMailingStatus",
-        "SMSMailings": [
-            {
-                "timestamp": 1123131392.734,
-                "SMSText": "Сегодня гроза! Будьте осторожны!",
-                "mailingId": "1",
-                "totalSMSAmount": 100,
-                "deliveredSMSAmount": 0,
-                "failedSMSAmount": 5,
-            }
-        ]
-    }
-
     while True:
-        for i in range(100):
-            message["SMSMailings"][0]["deliveredSMSAmount"] = i
-            await websocket.send(json.dumps(message))
-            await trio.sleep(1)
+        all_sms_ids = await trio_asyncio.run_asyncio(app.db_pool.list_sms_mailings)
+        all_sms_data = await trio_asyncio.run_asyncio(app.db_pool.get_sms_mailings, *all_sms_ids)
+
+        sms_list = []
+        for sms_data in all_sms_data:
+            converted_sms = await convert_sms_data(sms_data)
+            sms_list.append(converted_sms)
+
+        response = {
+            "msgType": "SMSMailingStatus",
+            "SMSMailings": sms_list
+        }
+        await websocket.send(json.dumps(response))
+        await trio.sleep(1)
 
 
 async def run_server():
