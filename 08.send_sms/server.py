@@ -7,7 +7,7 @@ import aioredis
 from hypercorn.trio import serve
 from hypercorn.config import Config as HyperConfig
 import trio
-from quart import websocket, render_template, request
+from quart import websocket, request
 from dotenv import load_dotenv
 import json
 import os
@@ -18,7 +18,7 @@ import trio_asyncio
 from main import request_smsc
 from db.db import Database
 
-app = QuartTrio(__name__, template_folder='frontend')
+app = QuartTrio(__name__)
 
 
 @app.before_serving
@@ -39,16 +39,9 @@ async def close_db_pool():
         await trio_asyncio.run_asyncio(app.db_pool.redis.wait_closed)
 
 
-@app.route('/')
-async def hello():
-    context = {
-        "date": "01.02.2000",
-        "mailingId": "33",
-        "SMSText": "SMSText",
-        "percentFulfilled": "33",
-        "percentFailed": "11",
-    }
-    return await render_template('index.html', mailing=context)
+@app.route('/', methods=["GET"])
+async def index():
+    return await app.send_static_file("index.html")
 
 
 @app.route('/send/', methods=['POST'])
@@ -61,7 +54,7 @@ async def send():
     import random
 
     sms_id = str(random.randint(1, 10))
-    phones = ["+79305551234", "911", "112"]
+    phones = ["911", "112"]
     form = await request.form
     message = form["text"]
 
@@ -111,6 +104,7 @@ async def run_server():
         config = HyperConfig()
         config.bind = [f"0.0.0.0:5000"]
         config.use_reloader = True
+        app.static_folder = 'frontend'
         await serve(app, config)
 
 
