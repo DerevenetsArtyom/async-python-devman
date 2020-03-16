@@ -86,8 +86,8 @@ async def main():
     password = os.getenv("PASSWORD")
     phone = os.getenv("PHONE")
 
-    await request_smsc('send', login, password, {"phones": phone})
-    await request_smsc('status', login, password, {"phone": phone, "id": 67})
+    await request_smsc("send", login, password, {"phones": phone})
+    await request_smsc("status", login, password, {"phone": phone, "id": 67})
 
 
 if __name__ == "__main__":

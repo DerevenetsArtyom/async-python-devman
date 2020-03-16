@@ -36,7 +36,7 @@ async def convert_sms_data(sms_data):
 @app.before_serving
 async def create_db_pool():
     """Create and bind db_pool before start serving requests"""
-    create_redis_pool = functools.partial(aioredis.create_redis_pool, encoding='utf-8')
+    create_redis_pool = functools.partial(aioredis.create_redis_pool, encoding="utf-8")
 
     redis_uri = "redis://127.0.0.1:6379"
 
@@ -51,12 +51,12 @@ async def close_db_pool():
         await trio_asyncio.run_asyncio(app.db_pool.redis.wait_closed)
 
 
-@app.route('/', methods=["GET"])
+@app.route("/", methods=["GET"])
 async def index():
     return await app.send_static_file("index.html")
 
 
-@app.route('/send/', methods=['POST'])
+@app.route("/send/", methods=["POST"])
 async def send_sms():
     # Neither 'request_smsc' nor mocked stuff is used here,
     # just static data with some random for sake of simplicity
@@ -68,18 +68,18 @@ async def send_sms():
     await trio_asyncio.run_asyncio(app.db_pool.add_sms_mailing, sms_id, ["911", "112"], message)
 
     sms_ids = await trio_asyncio.run_asyncio(app.db_pool.list_sms_mailings)
-    print('There are messages with such IDs in the DB:', sms_ids)
+    print("There are messages with such IDs in the DB:", sms_ids)
 
-    print('sms_mailings:')
+    print("sms_mailings:")
     for id in sms_ids:
         sms_mailings = await trio_asyncio.run_asyncio(app.db_pool.get_sms_mailings, id)
-        print('\t', sms_mailings)
+        print("\t", sms_mailings)
     print()
 
     return {}
 
 
-@app.websocket('/ws')
+@app.websocket("/ws")
 async def ws():
     while True:
         all_sms_ids = await trio_asyncio.run_asyncio(app.db_pool.list_sms_mailings)
@@ -107,11 +107,11 @@ async def run_server():
         config = HyperConfig()
         config.bind = [f"0.0.0.0:5000"]
         config.use_reloader = True
-        app.static_folder = 'frontend'
+        app.static_folder = "frontend"
         await serve(app, config)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=trio.TrioDeprecationWarning)
     with suppress(KeyboardInterrupt):
         trio.run(run_server)
