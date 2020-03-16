@@ -2,7 +2,6 @@ import random
 import asyncio
 import functools
 import warnings
-from collections import Counter
 from contextlib import suppress
 
 import aioredis
@@ -16,21 +15,9 @@ from quart_trio import QuartTrio
 import trio_asyncio
 
 from db.db import Database
+from utils import convert_sms_data
 
 app = QuartTrio(__name__)
-
-
-async def convert_sms_data(sms_data):
-    """Convert sms related data from Redis format to format supported by frontend"""
-    phones_counter = Counter(sms_data["phones"].values())
-    return {
-        "timestamp": sms_data.get("created_at"),
-        "SMSText": sms_data.get("text"),
-        "mailingId": str(sms_data.get("sms_id")),
-        "totalSMSAmount": sms_data.get("phones_count"),
-        "deliveredSMSAmount": phones_counter.get("delivered", 0),
-        "failedSMSAmount": phones_counter.get("failed", 0),
-    }
 
 
 @app.before_serving
