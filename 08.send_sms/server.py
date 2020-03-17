@@ -1,3 +1,4 @@
+import os
 import random
 import asyncio
 import functools
@@ -20,12 +21,16 @@ from utils import convert_sms_data
 app = QuartTrio(__name__)
 
 
+REDIS_HOST = os.getenv("REDIS_HOST", '127.0.0.1')
+REDIS_PORT = os.getenv("REDIS_PORT", 6379)
+
+
 @app.before_serving
 async def create_db_pool():
     """Create and bind db_pool before start serving requests"""
     create_redis_pool = functools.partial(aioredis.create_redis_pool, encoding="utf-8")
 
-    redis_uri = "redis://127.0.0.1:6379"
+    redis_uri = f"redis://{REDIS_HOST}:{REDIS_PORT}"
 
     redis = await trio_asyncio.run_asyncio(create_redis_pool, redis_uri)
     app.db_pool = Database(redis)
