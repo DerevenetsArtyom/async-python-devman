@@ -4,12 +4,13 @@ import asyncio
 import functools
 import warnings
 from contextlib import suppress
+from typing import Dict, Any
 
 import aioredis
 from hypercorn.trio import serve
 from hypercorn.config import Config as HyperConfig
 import trio
-from quart import websocket, request
+from quart import websocket, request, Response
 import json
 
 from quart_trio import QuartTrio
@@ -20,13 +21,12 @@ from utils import convert_sms_data
 
 app = QuartTrio(__name__)
 
-
 REDIS_HOST = os.getenv("REDIS_HOST", '127.0.0.1')
 REDIS_PORT = os.getenv("REDIS_PORT", 6379)
 
 
 @app.before_serving
-async def create_db_pool():
+async def create_db_pool() -> None:
     """Create and bind db_pool before start serving requests"""
     create_redis_pool = functools.partial(aioredis.create_redis_pool, encoding="utf-8")
 
@@ -37,19 +37,19 @@ async def create_db_pool():
 
 
 @app.after_serving
-async def close_db_pool():
+async def close_db_pool() -> None:
     if app.db_pool:
         app.db_pool.redis.close()
         await trio_asyncio.run_asyncio(app.db_pool.redis.wait_closed)
 
 
 @app.route("/", methods=["GET"])
-async def index():
+async def index() -> Response:
     return await app.send_static_file("index.html")
 
 
 @app.route("/send/", methods=["POST"])
-async def send_sms():
+async def send_sms() -> Dict[str, Any]:
     # Neither 'request_smsc' nor mocked stuff is used here,
     # just static data with some random for sake of simplicity
 
@@ -72,7 +72,7 @@ async def send_sms():
 
 
 @app.websocket("/ws")
-async def ws():
+async def ws() -> None:
     while True:
         all_sms_ids = await trio_asyncio.run_asyncio(app.db_pool.list_sms_mailings)
         all_sms_data = await trio_asyncio.run_asyncio(app.db_pool.get_sms_mailings, *all_sms_ids)
@@ -90,7 +90,7 @@ async def ws():
         await trio.sleep(1)
 
 
-async def run_server():
+async def run_server() -> None:
     async with trio_asyncio.open_loop():
         # trio_asyncio has difficulties with aioredis, workaround here:
         # https://github.com/python-trio/trio-asyncio/issues/63 (answer from @parity3)
